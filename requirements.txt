@@ -1,0 +1,9 @@
+streamlit
+pytesseract
+opencv-python
+scikit-learn
+pandas
+spacy
+nltk
+pdf2image
+numpy
