@@ -1,0 +1,14 @@
+text,category
+"invoice hotel stay room 202 checkin checkout",Travel
+"flight ticket confirmation airline seat 12a",Travel
+"uber ride receipt trip airport",Travel
+"aws web services cloud hosting server charge",Software
+"adobe creative cloud subscription monthly",Software
+"github copilot pro subscription",Software
+"grocery store apples bananas milk bread",Food
+"burger king combo meal whopper fries",Food
+"pizza hut delivery large pepperoni",Food
+"starbucks coffee latte croissant",Food
+"electricity bill power consumption",Utilities
+"water usage utility invoice",Utilities
+"internet bill fiber connection month",Utilities
