@@ -1,4 +1,5 @@
-streamlit
+flask
+flask-cors
 pytesseract
 opencv-python
 scikit-learn
