@@ -30,9 +30,18 @@ def extract_amount(text):
     Extracts the Total Amount from the text.
     It looks for the largest monetary value or specific keywords like "Total".
     """
-    # Regex for currency: $50.00, 50.00 EUR, £50.00, 50.00
-    # Looks for a number with 2 decimal places, optionally preceded by a currency symbol
-    amount_pattern = r'[\$\£\€]?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2}))'
+    # Regex for currency: 
+    # 1. Standard US: $1,234.56
+    # 2. European/Space: $ 1 234,56 or 1 234.56 or € 1.234,56
+    # 3. Plain: 1234.56
+    
+    # Strategy: Find all numbers that look like currency, then clean them.
+    # We look for patterns that end with 2 decimals.
+    # The regex now optionally matches a currency symbol at the start, followed by optional space
+    
+    # Matches: $ 1 234,56 | 1,234.56 | 1234.56 | 1234,56
+    # It allows simple spaces or commas or dots as separators
+    amount_pattern = r'(?:[\$\€\£]\s?)?(\d{1,3}(?:[ .,]\d{3})*[.,]\d{2})'
     
     amounts = re.findall(amount_pattern, text)
     
@@ -40,9 +49,24 @@ def extract_amount(text):
     valid_amounts = []
     for amount in amounts:
         try:
-            # Remove commas (e.g., 1,000.00 -> 1000.00)
-            clean_amount = amount.replace(',', '')
-            valid_amounts.append(float(clean_amount))
+            # Clean up the string to standard float format (1234.56)
+            # Remove spaces
+            clean_str = amount.replace(' ', '')
+            # Replace comma with dot if it's the decimal separator (European)
+            # Heuristic: if comma is at index -3 (e.g. 123,45), replace it
+            if ',' in clean_str and clean_str[-3] == ',':
+                 clean_str = clean_str.replace('.', '').replace(',', '.')
+            else:
+                 # Standard US: remove commas
+                 clean_str = clean_str.replace(',', '')
+            
+            val = float(clean_str)
+            
+            # Filter out small numbers/versions (like 3.20) or years (2013.04)
+            # Heuristic: Invoice totals are usually > 10.00
+            if val > 10.00:
+                valid_amounts.append(val)
+                
         except ValueError:
             continue
             
