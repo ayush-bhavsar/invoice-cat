@@ -38,7 +38,7 @@ resetBtn.addEventListener('click', () => {
     resultContainer.classList.add('hidden');
     dropZone.classList.remove('hidden');
     fileInput.value = '';
-    
+
     // Reset visuals
     uploadText.innerHTML = 'Drag & Drop your invoice or <span class="browse-link">Browse</span>';
     uploadIcon.classList.remove('hidden');
@@ -85,10 +85,10 @@ async function handleFile(file) {
 function showResults(data) {
     // Hide Loader
     loader.classList.add('hidden');
-    
+
     // Hide Upload Box (optional, or just show below)
     dropZone.classList.add('hidden');
-    
+
     // Populate Data
     document.getElementById('file-name-display').innerText = data.filename;
     document.getElementById('res-date').innerText = data.date || "Not Found";
@@ -97,6 +97,27 @@ function showResults(data) {
 
     // Show Results
     resultContainer.classList.remove('hidden');
+
+    // Attach data to Download Button
+    const downloadBtn = document.getElementById('download-btn');
+    downloadBtn.onclick = () => downloadCSV(data);
+}
+
+function downloadCSV(data) {
+    const headers = ["Filename", "Date", "Total Amount", "Category"];
+    const rows = [[data.filename, data.date, data.total_amount, data.category]];
+
+    let csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "invoice_report.csv");
+    document.body.appendChild(link); // Required for FF
+    link.click();
+    document.body.removeChild(link);
 }
 
 function resetUIAfterError() {

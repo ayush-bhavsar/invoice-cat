@@ -83,4 +83,5 @@ def upload_file():
 if __name__ == '__main__':
     load_model()
     # Debug mode is fine for development
-    app.run(debug=True, port=5000)
+    # Debug mode is fine for development, but reloader causes issues in some envs
+    app.run(debug=True, port=5000, use_reloader=False)
