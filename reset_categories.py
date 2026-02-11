@@ -1,4 +1,7 @@
-description,category
+import os
+
+# The Mega List of Categories
+csv_content = """description,category
 Dell Optiplex Desktop,Electronics
 HP Thin Client,Electronics
 Gaming PC Tower,Electronics
@@ -38,3 +41,11 @@ Sneakers,Clothing
 Drill Bit Set,Tools
 Hammer and Nails,Tools
 Paint Can,Tools
+"""
+
+# Force write to the file
+os.makedirs('training_data', exist_ok=True)
+with open('training_data/categories.csv', 'w') as f:
+    f.write(csv_content)
+
+print("SUCCESS: 'categories.csv' has been updated with 40+ items!")
