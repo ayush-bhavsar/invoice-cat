@@ -1,0 +1,14 @@
+# Invoice Processing System - Dependencies
+
+# Google Gemini API
+google-generativeai>=0.3.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Standard libraries (usually included)
+# - csv
+# - json
+# - logging
+# - pathlib
+# - datetime
