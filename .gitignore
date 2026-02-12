@@ -1,2 +1,7 @@
 .ipynb_checkpoints
 invoices
+.env
+output/
+__pycache__/
+*.pyc
+*.pyo

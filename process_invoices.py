@@ -13,6 +13,10 @@ import google.generativeai as genai
 from PIL import Image
 from datetime import datetime
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
