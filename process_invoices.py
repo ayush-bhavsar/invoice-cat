@@ -18,15 +18,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('output/processing.log'),
-        logging.StreamHandler()
-    ]
-)
+# Logging will be configured after output folder is created
 logger = logging.getLogger(__name__)
 
 
@@ -64,9 +56,20 @@ class InvoiceProcessor:
         self.output_folder = Path(output_folder)
         self.output_folder.mkdir(exist_ok=True)
 
+        # Configure logging after output folder exists
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(self.output_folder / 'processing.log'),
+                logging.StreamHandler()
+            ],
+            force=True
+        )
+
         # Configure Gemini
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
 
         # Progress tracking
         self.processed_count = 0
