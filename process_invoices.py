@@ -42,7 +42,10 @@ class InvoiceProcessor:
     REQUESTS_PER_MINUTE = 15
     DELAY_BETWEEN_REQUESTS = 60 / REQUESTS_PER_MINUTE  # ~4 seconds
 
-    def __init__(self, api_key: str, input_folder: str = "invoices", output_folder: str = "output"):
+    def __init__(self, 
+                 api_key: str, 
+                 input_folder: str = "invoices", 
+                 output_folder: str = "output"):
         """
         Initialize the invoice processor
 
