@@ -50,11 +50,16 @@ def main():
                 # Optional: Keep X-Ray on if you want to see logic
                 # print(f"      [X-RAY] Found Word: '{product}' --> Voted: {cat}")
 
-            if votes:
-                winner = Counter(votes).most_common(1)[0][0]
-                main_category = winner
+        if votes:
+            # FIX: Filter out "Other" noise. Valid categories should win even if minority.
+            meaningful_votes = [v for v in votes if str(v) != "Other"]
+            
+            if meaningful_votes:
+                winner = Counter(meaningful_votes).most_common(1)[0][0]
+                main_category = str(winner)
             else:
-                main_category = "Uncategorized"
+                # If everything is Other, then it's Other.
+                main_category = "Other"
         else:
             main_category = "Uncategorized"
 
