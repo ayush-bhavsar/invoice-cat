@@ -56,6 +56,25 @@ def generate_csv():
             "Binder", "Folder", "File", "Portfolio", "Report Cover", "Divider", "Tab",
             "Stapler", "Staples", "Clip", "Clamp", "Pin", "Tack", "Tape", "Glue", "Adhesive",
             "Scissors", "Ruler", "Calculator", "Whiteboard", "Corkboard", "Calendar", "Planner"
+        ],
+        "Books & Media": [
+            "Book", "Novel", "Textbook", "Manual", "Guide", "Directory", "Dictionary", 
+            "Encyclopedia", "Bible", "Scripture", "Magazine", "Journal", "Newspaper", 
+            "Catalogue", "Brochure", "Flyer", "DVD", "Blu-ray", "CD", "Vinyl", "Record", 
+            "Software", "License", "Subscription", "Key", "Activation", "Download", "Digital"
+        ],
+        "Services": [
+            "Shipping", "Delivery", "Freight", "Postage", "Handling", "Surcharge", "Fee",
+            "Labor", "Installation", "Repair", "Maintenance", "Service", "Consulting", "Support",
+            "Warranty", "Guarantee", "Protection", "Plan", "Subscription", "Membership", "Dues",
+            "Training", "Course", "Workshop", "Seminar", "Hosting", "Domain", "Cloud"
+        ],
+        "Hardware": [
+            "Rack", "Mount", "Stand", "Bracket", "Rail", "Shelving", "Chassis", "Case",
+            "Tool", "Drill", "Hammer", "Wrench", "Screwdriver", "Pliers", "Saw", "Level",
+            "Bolt", "Nut", "Screw", "Washer", "Nail", "Anchor", "Fastener", "Hinge",
+            "Part", "Component", "Module", "Unit", "Spare", "Replacement", "Accessory",
+            "Cable", "Wire", "Cord", "Connector", "Adapter", "Plug", "Socket" 
         ]
     }
 
