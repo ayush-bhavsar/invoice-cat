@@ -19,7 +19,6 @@ def train_model():
     model.fit(X_train, y_train)
     
     return model
-
 _trained_model = train_model()
 
 def predict_category(product_name):

@@ -2,21 +2,33 @@ import os
 import pandas as pd
 from collections import Counter
 from ocr_engine import extract_invoice_data
-from classifier import predict_category
+# --- FIX IS HERE: Changed back to 'classifier' ---
+from classifier import predict_category 
 
 def main():
     # 1. Setup Folders
     input_folder = 'invoices'
     output_folder = 'output'
     os.makedirs(output_folder, exist_ok=True)
+    
+    # Define Output Path
+    output_path = os.path.join(output_folder, 'final_detailed_report.csv')
 
-    final_report = []
+    # --- RESET STEP ---
+    # Since we are appending, we must delete the old file first to start fresh.
+    if os.path.exists(output_path):
+        try:
+            os.remove(output_path)
+            print(f"Old report removed. Starting fresh: {output_path}")
+        except PermissionError:
+            print(f"ERROR: Please CLOSE {output_path} in Excel and run again.")
+            return
 
     # 2. Find Images
-    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png'))]
+    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
     print(f"Found {len(files)} invoices to process.\n")
 
-    # 3. Process Each File
+    # 3. Process Each File (and Save Immediately)
     for filename in files:
         print(f"--- Processing {filename} ---")
         image_path = os.path.join(input_folder, filename)
@@ -28,19 +40,17 @@ def main():
             print(f"   Skipping {filename} (OCR Failed)")
             continue
 
-        # B. DETERMINE CATEGORY (Majority Rule)
+        # B. DETERMINE CATEGORY
         votes = []
         if raw_data['product_descriptions']:
-            # 1. Vote for every product
             for product in raw_data['product_descriptions']:
                 cat = predict_category(product)
                 votes.append(cat)
-                # Uncomment next line to see the votes in real-time
-                # print(f"      [Vote] {product} -> {cat}")
+                
+                # Optional: Keep X-Ray on if you want to see logic
+                # print(f"      [X-RAY] Found Word: '{product}' --> Voted: {cat}")
 
-            # 2. Count Votes
             if votes:
-                # most_common(1) returns the top winner: [('Electronics', 3)]
                 winner = Counter(votes).most_common(1)[0][0]
                 main_category = winner
             else:
@@ -50,8 +60,8 @@ def main():
 
         print(f"   => ID: {raw_data['invoice_id']} | Winner: {main_category}")
 
-        # C. BUILD ROW
-        final_report.append({
+        # C. PREPARE SINGLE ROW
+        current_row = {
             "Invoice No": raw_data['invoice_id'],
             "Date": raw_data['date'],
             "Seller Name": raw_data['seller_name'],
@@ -61,21 +71,23 @@ def main():
             "Client Tax ID": raw_data['client_tax_id'],
             "Total Amount": raw_data['total_amount'],
             "Category": main_category
-        })
+        }
 
-    # 4. Save Report
-    if final_report:
-        df = pd.DataFrame(final_report)
-        output_path = os.path.join(output_folder, 'final_detailed_report.csv')
+        # D. SAVE IMMEDIATELY (The Incremental Fix)
+        df_current = pd.DataFrame([current_row])
+        
+        # Logic: 
+        # - mode='a' means APPEND (add to bottom).
+        # - header=... If file doesn't exist, write header. If it does, skip header.
+        write_header = not os.path.exists(output_path)
         
         try:
-            df.to_csv(output_path, index=False)
-            print(f"\nSUCCESS! Detailed report saved to: {output_path}")
-            print(df[["Invoice No", "Total Amount", "Category"]].head())
+            df_current.to_csv(output_path, mode='a', header=write_header, index=False)
+            print(f"   [Saved] Row added to CSV.")
         except PermissionError:
-            print(f"\nERROR: Please CLOSE the Excel file and run again.")
-    else:
-        print("No invoices processed.")
+            print(f"   [ERROR] Could not save row. Is the CSV open?")
+
+    print(f"\nSUCCESS! All processing complete. Data saved in {output_path}")
 
 if __name__ == "__main__":
     main()
