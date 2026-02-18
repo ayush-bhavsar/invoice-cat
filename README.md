@@ -140,7 +140,7 @@ SmartInvoiceProject/
 
 This project is proprietary software. All rights reserved.
 
-**Copyright © 2025 Manav Patel**
+**Copyright © 2026 Manav Patel**
 
 - **Modify:** Not permitted without explicit permission
 - **Contributions:** Welcome, but require prior approval from the repository owner
