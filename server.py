@@ -32,6 +32,14 @@ def serve_index():
 def serve_static(path):
     return send_from_directory('frontend', path)
 
+@app.route('/upload-page')
+def serve_upload_page():
+    return send_from_directory('frontend', 'upload.html')
+
+@app.route('/how-it-works')
+def serve_how_it_works():
+    return send_from_directory('frontend', 'how_it_works.html')
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:

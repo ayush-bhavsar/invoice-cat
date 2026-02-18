@@ -21,9 +21,10 @@
         </div>
         <div class="nav-links">
             <a href="#features">Features</a>
-            <a href="#upload" class="btn-primary">Get Started</a>
         </div>
     </nav>
+
+    <div class="background-grid"></div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -35,77 +36,52 @@
             <p class="fade-in-up delay-1">Extract dates, amounts, and categories instantly with our AI-powered engine.
                 Stop manual data entry today.</p>
             <div class="hero-buttons fade-in-up delay-2">
-                <a href="#upload" class="btn-primary-lg">Upload Invoice <i class="fa-solid fa-cloud-arrow-up"></i></a>
-                <a href="#how-it-works" class="btn-secondary-lg">How it Works</a>
+                <a href="/upload-page" class="btn-primary-lg">Upload Invoice <i
+                        class="fa-solid fa-cloud-arrow-up"></i></a>
+                <a href="/how-it-works" class="btn-secondary-lg">How it Works</a>
             </div>
         </div>
     </section>
 
-    <!-- Upload Section -->
-    <section id="upload" class="upload-section">
+    <!-- Features Section -->
+    <section id="features" class="features-section">
         <div class="container">
-            <h2 class="section-title">Drop your file here</h2>
-            <p class="section-subtitle">Supports PNG, JPG, JPEG</p>
-
-            <div class="glass-card upload-card" id="drop-zone">
-                <div class="upload-icon">
-                    <i class="fa-solid fa-file-arrow-up"></i>
+            <h2 class="section-title">Why Choose InvoiceAI?</h2>
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="glass-card feature-card scroll-reveal">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3>Smart Extraction</h3>
+                    <p>Automatically identifies dates, amounts, and categories with high precision.</p>
                 </div>
-                <p class="upload-text">Drag & Drop invoices or <span class="browse-link">Browse</span></p>
-                <input type="file" id="file-input" hidden accept=".png, .jpg, .jpeg" multiple>
-                <div id="loader" class="loader hidden"></div>
 
-                <!-- Batch Progress (Hidden initially) -->
-                <div id="batch-progress" class="batch-progress hidden">
-                    <p id="progress-text">Processed 0 / 0</p>
-                    <div class="progress-bar-container">
-                        <div id="progress-bar" class="progress-bar"></div>
+                <!-- Feature 2 -->
+                <div class="glass-card feature-card scroll-reveal" style="transition-delay: 0.2s">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-layer-group"></i>
                     </div>
+                    <h3>Batch Processing</h3>
+                    <p>Upload multiple invoices at once and process them in seconds.</p>
                 </div>
-            </div>
 
-            <!-- Global Actions -->
-            <div id="global-actions" class="hidden" style="text-align: center; margin-top: 20px;">
-                <button class="btn-primary" id="download-report-btn"><i class="fa-solid fa-file-csv"></i> Download Final
-                    Report</button>
-            </div>
-
-            <!-- Results Section (Hidden initially) -->
-            <div id="result-container" class="result-container hidden fade-in">
-                <div class="glass-card result-card">
-                    <div class="result-header">
-                        <h3><i class="fa-solid fa-check-circle"></i> Extraction Complete</h3>
-                        <span id="file-name-display" class="badge">invoice.jpg</span>
+                <!-- Feature 3 -->
+                <div class="glass-card feature-card scroll-reveal" style="transition-delay: 0.4s">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-file-csv"></i>
                     </div>
-
-                    <div class="result-grid">
-                        <div class="result-item">
-                            <span class="label">Date</span>
-                            <span class="value" id="res-date">--</span>
-                        </div>
-                        <div class="result-item">
-                            <span class="label">Total Amount</span>
-                            <span class="value price" id="res-amount">--</span>
-                        </div>
-                        <div class="result-item">
-                            <span class="label">Category</span>
-                            <span class="value type" id="res-category">--</span>
-                        </div>
-                    </div>
-
-                    <div class="result-actions">
-                        <!-- In a real app, this would use the JSON to build a CSV -->
-                        <button class="btn-primary" id="download-btn"><i class="fa-solid fa-download"></i> Download
-                            Report</button>
-                        <button class="btn-secondary" id="reset-btn">Upload Another</button>
-                    </div>
+                    <h3>Instant Export</h3>
+                    <p>Download detailed CSV reports compatible with Excel and Quickbooks.</p>
                 </div>
             </div>
         </div>
     </section>
+
+
 
     <footer>
-        <p>&copy; 2024 Smart Invoice AI. Built with Python & Modern Web.</p>
+        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
     </footer>
 
     <script src="script.js"></script>

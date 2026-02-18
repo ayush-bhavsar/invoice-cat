@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Invoice - Smart Invoice Extractor</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Inter for that clean, modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-grid"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> InvoiceAI
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/how-it-works">How it Works</a>
+        </div>
+    </nav>
+
+    <!-- Upload Section -->
+    <section id="upload" class="upload-section">
+        <div class="container">
+            <h2 class="section-title">Drop your file here</h2>
+            <p class="section-subtitle">Supports PNG, JPG, JPEG</p>
+
+            <div class="glass-card upload-card" id="drop-zone">
+                <div class="upload-icon">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                </div>
+                <p class="upload-text">Drag & Drop invoices or <span class="browse-link">Browse</span></p>
+                <input type="file" id="file-input" hidden accept=".png, .jpg, .jpeg" multiple>
+                <div id="loader" class="loader hidden"></div>
+
+                <!-- Batch Progress (Hidden initially) -->
+                <div id="batch-progress" class="batch-progress hidden">
+                    <p id="progress-text">Processed 0 / 0</p>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Actions -->
+            <div id="global-actions" class="hidden" style="text-align: center; margin-top: 20px;">
+                <button class="btn-primary" id="download-report-btn"><i class="fa-solid fa-file-csv"></i> Download Final
+                    Report</button>
+                <button class="btn-secondary" id="process-more-btn"><i class="fa-solid fa-rotate-right"></i> Process New
+                    Batch</button>
+            </div>
+
+            <!-- Results Section (Hidden initially) -->
+            <div id="result-container" class="result-container hidden fade-in">
+                <div class="glass-card result-card">
+                    <div class="result-header">
+                        <h3><i class="fa-solid fa-check-circle"></i> Extraction Complete</h3>
+                        <span id="file-name-display" class="badge">invoice.jpg</span>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span class="label">Date</span>
+                            <span class="value" id="res-date">--</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Total Amount</span>
+                            <span class="value price" id="res-amount">--</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Category</span>
+                            <span class="value type" id="res-category">--</span>
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <!-- In a real app, this would use the JSON to build a CSV -->
+                        <button class="btn-primary" id="download-btn"><i class="fa-solid fa-download"></i> Download
+                            Report</button>
+                        <button class="btn-secondary" id="reset-btn">Upload Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

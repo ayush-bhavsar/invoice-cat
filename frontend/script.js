@@ -8,31 +8,36 @@ const resultContainer = document.getElementById('result-container');
 const resetBtn = document.getElementById('reset-btn');
 
 // --- Drag & Drop Events ---
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = 'var(--primary)';
-    dropZone.style.transform = 'scale(1.02)';
-});
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.transform = 'scale(1.02)';
+    });
 
-dropZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = 'white';
-    dropZone.style.transform = 'scale(1)';
-});
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'white';
+        dropZone.style.transform = 'scale(1)';
+    });
 
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = 'white';
-    dropZone.style.transform = 'scale(1)';
-    const files = e.dataTransfer.files;
-    if (files.length) handleFile(files[0]);
-});
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'white';
+        dropZone.style.transform = 'scale(1)';
+        const files = e.dataTransfer.files;
+        if (files.length) handleFile(files[0]);
+    });
 
-// --- Click Events ---
-dropZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => {
-    if (fileInput.files.length) handleFiles(fileInput.files);
-});
+    // --- Click Events ---
+    dropZone.addEventListener('click', () => fileInput.click());
+}
+
+if (fileInput) {
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) handleFiles(fileInput.files);
+    });
+}
 
 // --- Main Logic ---
 async function handleFiles(files) {
@@ -44,6 +49,29 @@ async function handleFiles(files) {
     const progressText = document.getElementById('progress-text');
     const globalActions = document.getElementById('global-actions');
     const downloadBtn = document.getElementById('download-report-btn');
+    const processMoreBtn = document.getElementById('process-more-btn');
+
+    // Reset Logic for New Batch
+    processMoreBtn.onclick = () => {
+        // Reset UI
+        batchProgress.classList.add('hidden');
+        globalActions.classList.add('hidden');
+        uploadIcon.classList.remove('hidden');
+        uploadText.innerHTML = 'Drag & Drop invoices or <span class="browse-link">Browse</span>';
+
+        // Reset Progress
+        progressBar.style.width = '0%';
+        progressText.innerText = 'Processed 0 / 0';
+
+        // Reset Input
+        fileInput.value = '';
+
+        // Re-attach browse link listener since we overwrote HTML
+        document.querySelector('.browse-link').addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    };
 
     uploadIcon.classList.add('hidden');
     batchProgress.classList.remove('hidden');
@@ -129,3 +157,24 @@ function resetUIAfterError() {
     uploadIcon.classList.remove('hidden');
     uploadText.innerHTML = 'Drag & Drop your invoice or <span class="browse-link">Browse</span>';
 }
+
+
+
+// --- Scroll Reveal Animation ---
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: "0px 0px -50px 0px"
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target); // Only animate once
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.scroll-reveal').forEach(el => {
+    observer.observe(el);
+});
