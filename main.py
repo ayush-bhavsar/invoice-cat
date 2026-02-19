@@ -24,8 +24,8 @@ def main():
             print(f"ERROR: Please CLOSE {output_path} in Excel and run again.")
             return
 
-    # 2. Find Images
-    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+    # 2. Find Images and PDFs
+    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg', '.pdf'))]
     print(f"Found {len(files)} invoices to process.\n")
 
     # 3. Process Each File (and Save Immediately)

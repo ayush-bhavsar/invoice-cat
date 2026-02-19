@@ -86,7 +86,7 @@ async function handleFiles(files) {
 
     // Iterate
     for (const file of files) {
-        if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) continue;
+        if (!['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(file.type)) continue;
 
         // Update Text
         uploadText.innerText = `Processing: ${file.name}`;
