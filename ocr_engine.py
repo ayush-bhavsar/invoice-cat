@@ -1,3 +1,4 @@
+import os
 import pytesseract
 from pytesseract import Output
 from PIL import Image
@@ -6,19 +7,48 @@ import re
 # Uncomment if Tesseract is not in your PATH:
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-def extract_invoice_data(image_path):
-    print(f"   Scanning: {image_path}...")
-    
-    try:
-        img = Image.open(image_path)
-    except Exception as e:
-        print(f"Error opening image: {e}")
-        return {}
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+    print("Warning: PyMuPDF not installed. PDF support disabled. Run: pip install PyMuPDF")
 
+PDF_RENDER_DPI = 150
+
+
+def _pdf_to_images(pdf_path):
+    """Convert each page of a PDF to a PIL Image at PDF_RENDER_DPI."""
+    if not PYMUPDF_AVAILABLE:
+        raise RuntimeError("PyMuPDF is required for PDF support. Run: pip install PyMuPDF")
+
+    images = []
+    doc = fitz.open(pdf_path)
+    scale = PDF_RENDER_DPI / 72.0
+    mat = fitz.Matrix(scale, scale)
+    for page in doc:
+        pix = page.get_pixmap(matrix=mat)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
+    doc.close()
+    return images
+
+
+def _get_images_from_file(file_path):
+    """Return a list of PIL Images from an image file or a PDF."""
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        return _pdf_to_images(file_path)
+    else:
+        return [Image.open(file_path)]
+
+
+def _extract_from_image(img):
+    """Run OCR extraction on a single PIL Image. Returns a data dict."""
     ocr_data = pytesseract.image_to_data(img, output_type=Output.DICT)
     width, height = img.size
     n_boxes = len(ocr_data['text'])
-    
+
     data = {
         "invoice_id": "Not Found",
         "date": "Not Found",
@@ -34,25 +64,20 @@ def extract_invoice_data(image_path):
 
     # 1. Structure Finding (Start and End of Table)
     items_y_threshold = height
-    total_y_location = height # Default to bottom of page
+    total_y_location = height
 
     for i in range(n_boxes):
         text = ocr_data['text'][i].strip()
-        
-        # Start of Table
+
         if "ITEMS" in text.upper():
             items_y_threshold = ocr_data['top'][i]
-        
-        # End of Table (Look for Total, Subtotal, or Amount)
-        # We take the HIGHEST (top-most) occurrence of these words below the header
+
         if any(x in text.lower() for x in ["total", "subtotal", "amount due", "gross worth"]):
             if ocr_data['top'][i] > items_y_threshold:
-                # If this is higher up the page than our current guess, use it
                 if ocr_data['top'][i] < total_y_location:
                     total_y_location = ocr_data['top'][i]
 
     # 2. Extract Total Amount
-    # We look exactly at the total_y_location line
     if total_y_location != height:
         line_text = []
         for i in range(n_boxes):
@@ -80,7 +105,7 @@ def extract_invoice_data(image_path):
     for i in range(n_boxes):
         text = ocr_data['text'][i].strip()
         if not text: continue
-        
+
         x = ocr_data['left'][i]
         y = ocr_data['top'][i]
         text_lower = text.lower()
@@ -97,13 +122,12 @@ def extract_invoice_data(image_path):
 
         # Header Zone
         if 100 < y < items_y_threshold:
-            # Tax ID / IBAN / Names (Same as before)
             if re.match(r'\d{3}-\d{2}-\d{4}', text):
                 if x < (width / 2): data["seller_tax_id"] = text
                 else: data["client_tax_id"] = text
             if "GB" in text and len(text) > 10 and re.search(r'\d', text):
-                 if x < (width / 2): data["seller_iban"] = text
-            
+                if x < (width / 2): data["seller_iban"] = text
+
             is_blacklisted = any(b in text_lower for b in name_blacklist)
             is_date = bool(re.search(r'\d{2}/\d{2}/\d{4}', text))
             if not is_blacklisted and not is_date:
@@ -112,19 +136,74 @@ def extract_invoice_data(image_path):
                 else:
                     if not re.search(r'\d', text): client_lines.append(text)
 
-        # --- D. PRODUCTS (The Fix is Here) ---
-        # Only read if we are BELOW "Items" AND ABOVE "Total"
+        # Products
         if y > items_y_threshold and y < total_y_location:
-            
             if any(bad in text_lower for bad in prod_blacklist): continue
-            if re.match(r'^[\d.,\s%$]+$', text): continue # Skip numbers
-            
-            # Additional Cleanup: Skip very short words (garbage)
+            if re.match(r'^[\d.,\s%$]+$', text): continue
             if len(text) > 3:
                 data["product_descriptions"].append(text)
 
-    # Cleanup Names
     if seller_lines: data["seller_name"] = " ".join(seller_lines[:3]).replace("of ", "")
     if client_lines: data["client_name"] = " ".join(client_lines[:3])
 
     return data
+
+
+def _merge_page_data(pages_data):
+    """Merge extraction results from multiple pages into one record."""
+    merged = {
+        "invoice_id": "Not Found",
+        "date": "Not Found",
+        "seller_name": "Not Found",
+        "client_name": "Not Found",
+        "seller_tax_id": "Not Found",
+        "client_tax_id": "Not Found",
+        "seller_iban": "Not Found",
+        "total_amount": "0.00",
+        "items_count": 0,
+        "product_descriptions": []
+    }
+
+    scalar_fields = ["invoice_id", "date", "seller_name", "client_name",
+                     "seller_tax_id", "client_tax_id", "seller_iban", "total_amount"]
+
+    for page_data in pages_data:
+        for field in scalar_fields:
+            if merged[field] in ("Not Found", "0.00") and page_data.get(field) not in ("Not Found", "0.00"):
+                merged[field] = page_data[field]
+        merged["product_descriptions"].extend(page_data.get("product_descriptions", []))
+        merged["items_count"] += page_data.get("items_count", 0)
+
+    return merged
+
+
+def extract_invoice_data(file_path):
+    print(f"   Scanning: {file_path}...")
+
+    try:
+        images = _get_images_from_file(file_path)
+    except Exception as e:
+        print(f"Error opening file: {e}")
+        return {}
+
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        print(f"   PDF detected: {len(images)} page(s)")
+
+    pages_data = []
+    for idx, img in enumerate(images):
+        if ext == '.pdf':
+            print(f"   Processing page {idx + 1}/{len(images)}...")
+        try:
+            page_data = _extract_from_image(img)
+            pages_data.append(page_data)
+        except Exception as e:
+            print(f"   Error on page {idx + 1}: {e}")
+
+    if not pages_data:
+        return {}
+
+    if len(pages_data) == 1:
+        return pages_data[0]
+
+    return _merge_page_data(pages_data)

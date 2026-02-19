@@ -4,3 +4,4 @@ pandas
 pytesseract
 Pillow
 scikit-learn
+PyMuPDF
