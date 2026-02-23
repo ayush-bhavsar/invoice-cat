@@ -5,3 +5,4 @@ pytesseract
 Pillow
 scikit-learn
 PyMuPDF
+gunicorn
