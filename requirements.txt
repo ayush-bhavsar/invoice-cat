@@ -5,3 +5,5 @@ pytesseract
 Pillow
 scikit-learn
 PyMuPDF
+tensorflow
+joblib
