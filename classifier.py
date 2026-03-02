@@ -41,7 +41,7 @@ load_resources()
 def predict_gemini_batch(product_names):
     if not GEMINI_API_KEY:
         print("Error: LLM_API_KEY not found in environment.")
-        return ["Unknown"] * len(product_names)
+        return None
         
     if not product_names:
         return []
@@ -88,7 +88,7 @@ def predict_gemini_batch(product_names):
             categories = json.loads(text)
         except json.JSONDecodeError:
             print(f"Failed to parse Gemini JSON output: {text}")
-            return ["Unknown"] * len(product_names)
+            return None
             
         if len(categories) != len(product_names):
             print(f"Warning: Gemini returned {len(categories)} categories for {len(product_names)} items.")
@@ -115,7 +115,7 @@ def predict_gemini_batch(product_names):
             
     except Exception as e:
         print(f"Gemini API Error during batch processing: {e}")
-        return ["Unknown"] * len(product_names)
+        return None
 
 def predict_categories_batch(product_names, method='local_nn'):
     """
@@ -127,7 +127,10 @@ def predict_categories_batch(product_names, method='local_nn'):
         
     if method == 'gemini':
         print(f"Using Gemini to categorize {len(product_names)} items in batch.")
-        return predict_gemini_batch(product_names)
+        result = predict_gemini_batch(product_names)
+        if result is not None:
+            return result
+        print("Gemini failed or rate-limited. Seamlessly falling back to local_nn...")
 
     # Fallback to local NN batch (much faster)
     if _model is None or _vectorizer is None or _label_encoder is None:

@@ -7,6 +7,14 @@ const uploadIcon = document.querySelector('.upload-icon');
 const resultContainer = document.getElementById('result-container');
 const resetBtn = document.getElementById('reset-btn');
 
+// --- New Queue UI Elements ---
+const queueUi = document.getElementById('queue-ui');
+const queueText = document.getElementById('queue-text');
+const startProcessBtn = document.getElementById('start-process-btn');
+const clearQueueBtn = document.getElementById('clear-queue-btn');
+
+let queuedFiles = [];
+
 // --- Drag & Drop Events ---
 if (dropZone) {
     dropZone.addEventListener('dragover', (e) => {
@@ -26,7 +34,7 @@ if (dropZone) {
         dropZone.style.borderColor = 'white';
         dropZone.style.transform = 'scale(1)';
         const files = e.dataTransfer.files;
-        if (files.length) handleFile(files[0]);
+        if (files.length) queueFiles(files);
     });
 
     // --- Click Events ---
@@ -35,7 +43,47 @@ if (dropZone) {
 
 if (fileInput) {
     fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) handleFiles(fileInput.files);
+        if (fileInput.files.length) queueFiles(fileInput.files);
+    });
+}
+
+// --- Queue Logic ---
+function queueFiles(files) {
+    // Convert FileList to Array and filter valid types
+    const validFiles = Array.from(files).filter(f =>
+        ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(f.type)
+    );
+
+    if (validFiles.length === 0) return;
+
+    // Add to our queue array
+    queuedFiles = queuedFiles.concat(validFiles);
+
+    // Update UI
+    uploadText.innerText = "Files ready!";
+    queueUi.classList.remove('hidden');
+
+    const count = queuedFiles.length;
+    queueText.innerHTML = `<span style="color: var(--primary); font-size: 1.2rem;">${count}</span> invoice${count > 1 ? 's' : ''} selected and ready for processing.`;
+
+    // Hide global actions if they were visible from a previous run
+    document.getElementById('global-actions').classList.add('hidden');
+}
+
+if (clearQueueBtn) {
+    clearQueueBtn.addEventListener('click', () => {
+        queuedFiles = [];
+        queueUi.classList.add('hidden');
+        uploadText.innerHTML = 'Drag & Drop invoices or <span class="browse-link">Browse</span>';
+        fileInput.value = ''; // Reset input
+    });
+}
+
+if (startProcessBtn) {
+    startProcessBtn.addEventListener('click', () => {
+        if (queuedFiles.length > 0) {
+            handleFiles(queuedFiles);
+        }
     });
 }
 
@@ -63,8 +111,9 @@ async function handleFiles(files) {
         progressBar.style.width = '0%';
         progressText.innerText = 'Processed 0 / 0';
 
-        // Reset Input
+        // Reset Input and Queue
         fileInput.value = '';
+        queuedFiles = [];
 
         // Re-attach browse link listener since we overwrote HTML
         document.querySelector('.browse-link').addEventListener('click', (e) => {
@@ -73,6 +122,7 @@ async function handleFiles(files) {
         });
     };
 
+    queueUi.classList.add('hidden');
     uploadIcon.classList.add('hidden');
     batchProgress.classList.remove('hidden');
     globalActions.classList.add('hidden');

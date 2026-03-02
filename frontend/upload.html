@@ -87,6 +87,16 @@
                 </div>
             </div>
 
+            <!-- Queue UI (Hidden initially, shows after files selected) -->
+            <div id="queue-ui" class="hidden" style="text-align: center; margin-top: 20px;">
+                <p id="queue-text" style="font-weight: 600; margin-bottom: 15px; color: var(--text);">0 files selected
+                    ready for processing.</p>
+                <button class="btn-primary" id="start-process-btn"><i class="fa-solid fa-play"></i> Start
+                    Processing</button>
+                <button class="btn-secondary" id="clear-queue-btn" style="margin-left: 10px;"><i
+                        class="fa-solid fa-xmark"></i> Clear</button>
+            </div>
+
             <!-- Global Actions -->
             <div id="global-actions" class="hidden" style="text-align: center; margin-top: 20px;">
                 <button class="btn-primary" id="download-report-btn"><i class="fa-solid fa-file-csv"></i> Download Final
