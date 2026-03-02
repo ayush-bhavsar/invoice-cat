@@ -118,8 +118,12 @@ async function processSingleFile(file, batchId) {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Add query param save=true and batch_id
-    const response = await fetch(`http://127.0.0.1:5000/upload?save=true&batch_id=${batchId}`, {
+    // Get classification method from UI toggle
+    const toggleElement = document.getElementById('classification-method-toggle');
+    const classificationMethod = toggleElement && toggleElement.checked ? 'gemini' : 'local_nn';
+
+    // Add query param save=true, batch_id, AND classification method
+    const response = await fetch(`http://127.0.0.1:5000/upload?save=true&batch_id=${batchId}&method=${classificationMethod}`, {
         method: 'POST',
         body: formData
     });

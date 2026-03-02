@@ -65,10 +65,12 @@ def upload_file():
 
         # 2. Classification
         from collections import Counter
+        from classifier import predict_categories_batch
+        classification_method = request.args.get('method', 'local_nn')
         votes = []
         if raw_data.get('product_descriptions'):
-            for product in raw_data['product_descriptions']:
-                cat = predict_category(product)
+            cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
+            for cat in cats:
                 if cat != "Other":
                     votes.append(cat)
         

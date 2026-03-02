@@ -3,7 +3,7 @@ import pandas as pd
 from collections import Counter
 from ocr_engine import extract_invoice_data
 # --- FIX IS HERE: Changed back to 'classifier' ---
-from classifier import predict_category 
+from classifier import predict_categories_batch
 
 def main():
     # 1. Setup Folders
@@ -43,8 +43,8 @@ def main():
         # B. DETERMINE CATEGORY
         votes = []
         if raw_data['product_descriptions']:
-            for product in raw_data['product_descriptions']:
-                cat = predict_category(product)
+            cats = predict_categories_batch(raw_data['product_descriptions'])
+            for cat in cats:
                 votes.append(cat)
                 
                 # Optional: Keep X-Ray on if you want to see logic

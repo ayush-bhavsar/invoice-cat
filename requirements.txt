@@ -7,3 +7,5 @@ scikit-learn
 PyMuPDF
 tensorflow
 joblib
+google-generativeai
+python-dotenv
