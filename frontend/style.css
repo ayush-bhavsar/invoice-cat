@@ -475,7 +475,8 @@ footer {
 }
 
 /* --- Glass Select & Input --- */
-.glass-select, .glass-input {
+.glass-select,
+.glass-input {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-main);
@@ -488,7 +489,8 @@ footer {
     backdrop-filter: blur(8px);
 }
 
-.glass-select:focus, .glass-input:focus {
+.glass-select:focus,
+.glass-input:focus {
     border-color: var(--primary-cyan);
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
 }
@@ -501,7 +503,7 @@ footer {
 /* --- KPI Grid --- */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -513,6 +515,7 @@ footer {
     gap: 16px;
     transition: all 0.3s ease;
     border-radius: 16px;
+    overflow: hidden;
 }
 
 .kpi-card:hover {
@@ -536,6 +539,8 @@ footer {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
+    flex: 1;
 }
 
 .kpi-label {
@@ -547,10 +552,13 @@ footer {
 }
 
 .kpi-value {
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
     font-weight: 700;
     color: var(--text-main);
     line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kpi-value.price {
@@ -677,8 +685,15 @@ footer {
 }
 
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
-    50% { box-shadow: 0 0 16px rgba(251, 191, 36, 0.8); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 16px rgba(251, 191, 36, 0.8);
+    }
 }
 
 .outlier-info {

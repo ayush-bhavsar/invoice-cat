@@ -18,19 +18,21 @@ const COLORS = [
 const COLORS_ALPHA = COLORS.map(c => c + '33');
 
 // --- Chart.js Global Defaults ---
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.plugins.legend.labels.padding = 15;
-Chart.defaults.plugins.legend.labels.usePointStyle = true;
-Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
-Chart.defaults.plugins.tooltip.titleColor = '#f8fafc';
-Chart.defaults.plugins.tooltip.bodyColor = '#94a3b8';
-Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
-Chart.defaults.plugins.tooltip.borderWidth = 1;
-Chart.defaults.plugins.tooltip.cornerRadius = 12;
-Chart.defaults.plugins.tooltip.padding = 12;
-Chart.defaults.scale.grid = { color: 'rgba(255,255,255,0.06)' };
-Chart.defaults.scale.border = { color: 'rgba(255,255,255,0.06)' };
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.plugins.legend.labels.padding = 15;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+    Chart.defaults.plugins.tooltip.titleColor = '#f8fafc';
+    Chart.defaults.plugins.tooltip.bodyColor = '#94a3b8';
+    Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.cornerRadius = 12;
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.scale.grid = { color: 'rgba(255,255,255,0.06)' };
+    Chart.defaults.scale.border = { color: 'rgba(255,255,255,0.06)' };
+}
 
 // =========================================================================
 // INIT
@@ -175,7 +177,6 @@ async function uploadCSVFile(file) {
         const result = await res.json();
 
         if (result.batch_id) {
-            // Update selector
             const selector = document.getElementById('batch-selector');
             const opt = document.createElement('option');
             opt.value = result.batch_id;
@@ -202,8 +203,6 @@ function renderDashboard(data) {
     renderMonthlyTrend(data.monthly_trends);
     renderCategoryTrend(data.category_trend);
     renderAmountDistribution(data.amount_distribution);
-    renderTopSellers(data.top_sellers);
-    renderTopClients(data.top_clients);
     renderIBANCountries(data.iban_countries);
     renderCompliance(data.missing_data);
     renderOutliers(data.outliers);
@@ -229,9 +228,33 @@ function renderKPIs(summary) {
     animateValue('kpi-unique-clients', summary.unique_clients, false);
 }
 
+function formatCompactCurrency(value) {
+    if (value >= 1000000) {
+        return '$' + (value / 1000000).toFixed(1) + 'M';
+    } else if (value >= 10000) {
+        return '$' + (value / 1000).toFixed(1) + 'K';
+    } else {
+        return '$' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+}
+
+function formatFullCurrency(value) {
+    return '$' + value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
 function animateValue(elementId, targetValue, isCurrency) {
     const el = document.getElementById(elementId);
     if (!el) return;
+
+    if (isCurrency) {
+        el.title = formatFullCurrency(targetValue);
+    }
 
     const duration = 1200;
     const start = performance.now();
@@ -240,15 +263,11 @@ function animateValue(elementId, targetValue, isCurrency) {
     function update(now) {
         const elapsed = now - start;
         const progress = Math.min(elapsed / duration, 1);
-        // Ease out cubic
         const eased = 1 - Math.pow(1 - progress, 3);
         const current = startVal + (targetValue - startVal) * eased;
 
         if (isCurrency) {
-            el.textContent = '$' + current.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+            el.textContent = formatCompactCurrency(current);
         } else {
             el.textContent = Math.round(current).toLocaleString();
         }
@@ -306,53 +325,97 @@ function renderCategoryDistribution(catData) {
     });
 }
 
-// --- Category Spend (Horizontal Bar) ---
+// --- Category Spend (Vertical Bar — using canvas 2D API fallback) ---
 function renderCategorySpend(catSpend) {
-    destroyChart('category-spend');
-    const ctx = document.getElementById('chart-category-spend');
-    if (!ctx || !catSpend) return;
+    const canvas = document.getElementById('chart-category-spend');
+    if (!canvas || !catSpend) return;
 
     const labels = Object.keys(catSpend);
-    const values = Object.values(catSpend);
+    const values = Object.values(catSpend).map(v => Number(v) || 0);
 
-    chartInstances['category-spend'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Total Spend',
-                data: values,
-                backgroundColor: createGradientBars(ctx, labels.length),
-                borderRadius: 8,
-                borderSkipped: false,
-                barThickness: 30
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (c) => '$ ' + c.raw.toLocaleString()
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        callback: (v) => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
-                    }
-                }
-            }
-        }
+    if (labels.length === 0) return;
+
+    // Use raw Canvas 2D drawing since Chart.js bar rendering has a known
+    // issue with base:null in certain CDN builds
+    const parent = canvas.parentElement;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight || 300;
+    canvas.width = width * 2;   // retina
+    canvas.height = height * 2;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+
+    const maxVal = Math.max(...values);
+    const padding = { top: 10, right: 20, bottom: 60, left: 70 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+    const barGap = 8;
+    const barW = Math.min(40, (chartW - barGap * (labels.length - 1)) / labels.length);
+    const totalBarsW = labels.length * barW + (labels.length - 1) * barGap;
+    const offsetX = padding.left + (chartW - totalBarsW) / 2;
+
+    // Clear
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw Y-axis gridlines and labels
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const gridSteps = 5;
+    for (let i = 0; i <= gridSteps; i++) {
+        const val = (maxVal / gridSteps) * i;
+        const y = padding.top + chartH - (chartH * (val / maxVal));
+
+        // Gridline
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = '#94a3b8';
+        let label;
+        if (val >= 1000000) label = '$' + (val / 1000000).toFixed(1) + 'M';
+        else if (val >= 1000) label = '$' + (val / 1000).toFixed(0) + 'K';
+        else label = '$' + Math.round(val);
+        ctx.fillText(label, padding.left - 8, y);
+    }
+
+    // Draw bars with animation
+    values.forEach((val, i) => {
+        const barH = maxVal > 0 ? (val / maxVal) * chartH : 0;
+        const x = offsetX + i * (barW + barGap);
+        const y = padding.top + chartH - barH;
+
+        // Bar
+        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.beginPath();
+        // Rounded top corners
+        const r = Math.min(6, barW / 2);
+        ctx.moveTo(x, padding.top + chartH);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.arcTo(x + barW, y, x + barW, y + r, r);
+        ctx.lineTo(x + barW, padding.top + chartH);
+        ctx.closePath();
+        ctx.fill();
+
+        // X-axis label
+        ctx.save();
+        ctx.translate(x + barW / 2, padding.top + chartH + 10);
+        ctx.rotate(Math.PI / 6); // 30 degrees
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(labels[i], 0, 0);
+        ctx.restore();
     });
-}
-
-function createGradientBars(ctx, count) {
-    return COLORS.slice(0, count);
 }
 
 // --- Monthly Spending Trend (Line + Bar Combo) ---
@@ -482,122 +545,92 @@ function renderCategoryTrend(catTrend) {
     });
 }
 
-// --- Amount Distribution (Histogram) ---
+// --- Amount Distribution (Histogram — Canvas 2D) ---
 function renderAmountDistribution(distData) {
-    destroyChart('amount-distribution');
-    const ctx = document.getElementById('chart-amount-distribution');
-    if (!ctx || !distData || !distData.labels) return;
+    const canvas = document.getElementById('chart-amount-distribution');
+    if (!canvas || !distData || !distData.labels) return;
 
-    chartInstances['amount-distribution'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: distData.labels,
-            datasets: [{
-                label: 'Invoices',
-                data: distData.values,
-                backgroundColor: COLORS.slice(0, distData.labels.length),
-                borderRadius: 8,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
-    });
-}
+    const labels = distData.labels;
+    const values = distData.values.map(v => Number(v) || 0);
 
-// --- Top Sellers (Horizontal Bar) ---
-function renderTopSellers(sellerData) {
-    destroyChart('top-sellers');
-    const ctx = document.getElementById('chart-top-sellers');
-    if (!ctx || !sellerData || !sellerData.labels) return;
+    if (labels.length === 0) return;
 
-    chartInstances['top-sellers'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sellerData.labels,
-            datasets: [{
-                label: 'Revenue',
-                data: sellerData.values,
-                backgroundColor: 'rgba(6, 182, 212, 0.6)',
-                borderColor: '#06b6d4',
-                borderWidth: 1,
-                borderRadius: 6,
-                barThickness: 24
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (c) => '$ ' + c.raw.toLocaleString()
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        callback: (v) => '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v)
-                    }
-                }
-            }
-        }
-    });
-}
+    const parent = canvas.parentElement;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight || 300;
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
 
-// --- Top Clients (Horizontal Bar) ---
-function renderTopClients(clientData) {
-    destroyChart('top-clients');
-    const ctx = document.getElementById('chart-top-clients');
-    if (!ctx || !clientData || !clientData.labels) return;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
 
-    chartInstances['top-clients'] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: clientData.labels,
-            datasets: [{
-                label: 'Billing',
-                data: clientData.values,
-                backgroundColor: 'rgba(139, 92, 246, 0.6)',
-                borderColor: '#8b5cf6',
-                borderWidth: 1,
-                borderRadius: 6,
-                barThickness: 24
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (c) => '$ ' + c.raw.toLocaleString()
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        callback: (v) => '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v)
-                    }
-                }
-            }
+    const maxVal = Math.max(...values, 1);
+    const padding = { top: 15, right: 20, bottom: 50, left: 45 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+    const barGap = 10;
+    const barW = Math.min(50, (chartW - barGap * (labels.length - 1)) / labels.length);
+    const totalBarsW = labels.length * barW + (labels.length - 1) * barGap;
+    const offsetX = padding.left + (chartW - totalBarsW) / 2;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Y-axis gridlines and labels
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const gridSteps = 5;
+    for (let i = 0; i <= gridSteps; i++) {
+        const val = Math.round((maxVal / gridSteps) * i);
+        const y = padding.top + chartH - (chartH * (val / maxVal));
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(String(val), padding.left - 8, y);
+    }
+
+    // Draw bars
+    values.forEach((val, i) => {
+        const barH = maxVal > 0 ? (val / maxVal) * chartH : 0;
+        const x = offsetX + i * (barW + barGap);
+        const y = padding.top + chartH - barH;
+
+        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.beginPath();
+        const r = Math.min(6, barW / 2);
+        ctx.moveTo(x, padding.top + chartH);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.arcTo(x + barW, y, x + barW, y + r, r);
+        ctx.lineTo(x + barW, padding.top + chartH);
+        ctx.closePath();
+        ctx.fill();
+
+        // X-axis label
+        ctx.save();
+        ctx.translate(x + barW / 2, padding.top + chartH + 8);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(labels[i], 0, 0);
+        ctx.restore();
+
+        // Value on top of bar
+        if (val > 0) {
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(String(val), x + barW / 2, y - 4);
         }
     });
 }
@@ -750,7 +783,6 @@ function renderTableRows(data) {
 }
 
 function setupTableControls() {
-    // Search
     const searchInput = document.getElementById('table-search');
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -758,7 +790,6 @@ function setupTableControls() {
         });
     }
 
-    // Category Filter
     const catFilter = document.getElementById('table-category-filter');
     if (catFilter) {
         catFilter.addEventListener('change', () => {
@@ -766,7 +797,6 @@ function setupTableControls() {
         });
     }
 
-    // Sortable Headers
     document.querySelectorAll('#data-table th[data-sort]').forEach(th => {
         th.style.cursor = 'pointer';
         th.addEventListener('click', () => {
@@ -809,8 +839,8 @@ function sortAndRender() {
         let valB = b[currentSortCol];
 
         if (currentSortCol === 'total_amount') {
-            valA = parseFloat(valA) || 0;
-            valB = parseFloat(valB) || 0;
+            valA = Number(valA) || 0;
+            valB = Number(valB) || 0;
         } else {
             valA = String(valA).toLowerCase();
             valB = String(valB).toLowerCase();
@@ -825,15 +855,15 @@ function sortAndRender() {
 }
 
 function populateCategoryFilter(catData) {
-    const filter = document.getElementById('table-category-filter');
-    if (!filter || !catData) return;
+    const select = document.getElementById('table-category-filter');
+    if (!select || !catData) return;
 
-    filter.innerHTML = '<option value="">All Categories</option>';
-    Object.keys(catData).forEach(cat => {
+    select.innerHTML = '<option value="">All Categories</option>';
+    Object.keys(catData).sort().forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
-        opt.textContent = `${cat} (${catData[cat]})`;
-        filter.appendChild(opt);
+        opt.textContent = cat;
+        select.appendChild(opt);
     });
 }
 
@@ -846,44 +876,39 @@ function setupPDFExport() {
 
     btn.addEventListener('click', async () => {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
 
         try {
             const dashboard = document.getElementById('dashboard-content');
             const canvas = await html2canvas(dashboard, {
                 backgroundColor: '#0B1120',
-                scale: 1.5,
-                logging: false,
-                useCORS: true
+                scale: 2,
+                useCORS: true,
+                logging: false
             });
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 210;
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const imgWidth = 297;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            const pageHeight = 297;
+            const imgData = canvas.toDataURL('image/png');
 
-            let yOffset = 0;
-            while (yOffset < imgHeight) {
-                if (yOffset > 0) doc.addPage();
-                doc.addImage(
-                    canvas.toDataURL('image/jpeg', 0.95),
-                    'JPEG',
-                    0,
-                    -yOffset,
-                    imgWidth,
-                    imgHeight
-                );
-                yOffset += pageHeight;
+            let y = 0;
+            const pageHeight = 210;
+
+            while (y < imgHeight) {
+                if (y > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, -y, imgWidth, imgHeight);
+                y += pageHeight;
             }
 
-            doc.save('invoice_analytics_report.pdf');
+            pdf.save('invoice-analytics-report.pdf');
         } catch (e) {
-            console.error('PDF generation failed:', e);
+            console.error('PDF export failed:', e);
             alert('PDF export failed. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Export PDF';
         }
-
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Export PDF';
     });
 }
