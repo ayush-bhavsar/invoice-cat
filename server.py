@@ -58,52 +58,59 @@ def upload_file():
 
         # 1. OCR Extraction
         try:
-            raw_data = extract_invoice_data(save_path)
+            raw_data_list = extract_invoice_data(save_path)
         except Exception as e:
             print(f"OCR Error: {e}")
             return jsonify({'error': f"OCR Error: {str(e)}"}), 500
+
+        if not raw_data_list:
+            return jsonify({'error': "OCR extracted no data"}), 400
 
         # 2. Classification
         from collections import Counter
         from classifier import predict_categories_batch
         classification_method = request.args.get('method', 'local_nn')
-        votes = []
-        if raw_data.get('product_descriptions'):
-            cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
-            for cat in cats:
-                if cat != "Other":
-                    votes.append(cat)
         
-        main_category = "Uncategorized"
-        if votes:
-            main_category = Counter(votes).most_common(1)[0][0]
-        elif raw_data.get('product_descriptions'): 
-             main_category = "Other"
+        response_data_list = []
 
-        # 3. Save to CSV
-        if request.args.get('save') == 'true':
-            batch_id = request.args.get('batch_id')
-            print(f"Saving to CSV. Batch ID: {batch_id}")
-            save_row_to_csv({
-                "Invoice No": raw_data.get('invoice_id'),
-                "Date": raw_data.get('date'),
-                "Seller Name": raw_data.get('seller_name'),
-                "Client Name": raw_data.get('client_name'),
-                "Seller Tax ID": raw_data.get('seller_tax_id'),
-                "Seller IBAN": raw_data.get('seller_iban', ''), 
-                "Client Tax ID": raw_data.get('client_tax_id'),
-                "Total Amount": raw_data.get('total_amount'),
-                "Category": main_category
-            }, batch_id)
+        for p_idx, raw_data in enumerate(raw_data_list):
+            votes = []
+            if raw_data.get('product_descriptions'):
+                cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
+                for cat in cats:
+                    if cat != "Other":
+                        votes.append(cat)
+            
+            main_category = "Uncategorized"
+            if votes:
+                main_category = Counter(votes).most_common(1)[0][0]
+            elif raw_data.get('product_descriptions'): 
+                 main_category = "Other"
 
-        response_data = {
-            "filename": filename,
-            "date": raw_data.get('date', 'Unknown'),
-            "total_amount": raw_data.get('total_amount', '0.00'),
-            "category": main_category
-        }
+            # 3. Save to CSV
+            if request.args.get('save') == 'true':
+                batch_id = request.args.get('batch_id')
+                print(f"Saving to CSV. Batch ID: {batch_id} (Page {p_idx+1})")
+                save_row_to_csv({
+                    "Invoice No": raw_data.get('invoice_id'),
+                    "Date": raw_data.get('date'),
+                    "Seller Name": raw_data.get('seller_name'),
+                    "Client Name": raw_data.get('client_name'),
+                    "Seller Tax ID": raw_data.get('seller_tax_id'),
+                    "Seller IBAN": raw_data.get('seller_iban', ''), 
+                    "Client Tax ID": raw_data.get('client_tax_id'),
+                    "Total Amount": raw_data.get('total_amount'),
+                    "Category": main_category
+                }, batch_id)
 
-        return jsonify(response_data)
+            response_data_list.append({
+                "filename": filename if len(raw_data_list) == 1 else f"{filename} (Page {p_idx+1})",
+                "date": raw_data.get('date', 'Unknown'),
+                "total_amount": raw_data.get('total_amount', '0.00'),
+                "category": main_category
+            })
+
+        return jsonify(response_data_list)
 
 def save_row_to_csv(data, batch_id=None):
     # 1. Save to Main Report (Archive)

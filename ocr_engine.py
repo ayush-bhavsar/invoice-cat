@@ -149,34 +149,6 @@ def _extract_from_image(img):
     return data
 
 
-def _merge_page_data(pages_data):
-    """Merge extraction results from multiple pages into one record."""
-    merged = {
-        "invoice_id": "Not Found",
-        "date": "Not Found",
-        "seller_name": "Not Found",
-        "client_name": "Not Found",
-        "seller_tax_id": "Not Found",
-        "client_tax_id": "Not Found",
-        "seller_iban": "Not Found",
-        "total_amount": "0.00",
-        "items_count": 0,
-        "product_descriptions": []
-    }
-
-    scalar_fields = ["invoice_id", "date", "seller_name", "client_name",
-                     "seller_tax_id", "client_tax_id", "seller_iban", "total_amount"]
-
-    for page_data in pages_data:
-        for field in scalar_fields:
-            if merged[field] in ("Not Found", "0.00") and page_data.get(field) not in ("Not Found", "0.00"):
-                merged[field] = page_data[field]
-        merged["product_descriptions"].extend(page_data.get("product_descriptions", []))
-        merged["items_count"] += page_data.get("items_count", 0)
-
-    return merged
-
-
 def extract_invoice_data(file_path):
     print(f"   Scanning: {file_path}...")
 
@@ -184,7 +156,7 @@ def extract_invoice_data(file_path):
         images = _get_images_from_file(file_path)
     except Exception as e:
         print(f"Error opening file: {e}")
-        return {}
+        return []
 
     ext = os.path.splitext(file_path)[1].lower()
     if ext == '.pdf':
@@ -200,10 +172,4 @@ def extract_invoice_data(file_path):
         except Exception as e:
             print(f"   Error on page {idx + 1}: {e}")
 
-    if not pages_data:
-        return {}
-
-    if len(pages_data) == 1:
-        return pages_data[0]
-
-    return _merge_page_data(pages_data)
+    return pages_data
