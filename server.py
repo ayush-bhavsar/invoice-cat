@@ -155,6 +155,227 @@ def download_report():
     return send_from_directory(app.config['OUTPUT_FOLDER'], 'final_detailed_report.csv', as_attachment=True)
 
 
+@app.route('/analytics')
+def serve_analytics():
+    return send_from_directory('frontend', 'analytics.html')
+
+@app.route('/api/batch-list')
+def api_batch_list():
+    """List all available batch report files."""
+    output_dir = app.config['OUTPUT_FOLDER']
+    batches = []
+    
+    # Main report
+    main_report = os.path.join(output_dir, 'final_detailed_report.csv')
+    if os.path.exists(main_report):
+        batches.append({
+            'id': 'main',
+            'name': 'Full Report (All Invoices)',
+            'filename': 'final_detailed_report.csv'
+        })
+    
+    # Batch reports
+    for f in os.listdir(output_dir):
+        if f.startswith('report_') and f.endswith('.csv'):
+            batch_id = f.replace('report_', '').replace('.csv', '')
+            batches.append({
+                'id': batch_id,
+                'name': f'Batch {batch_id}',
+                'filename': f
+            })
+    
+    return jsonify(batches)
+
+@app.route('/api/analytics')
+def api_analytics():
+    """Return aggregated analytics data from a CSV report."""
+    batch_id = request.args.get('batch_id')
+    output_dir = app.config['OUTPUT_FOLDER']
+    
+    # Determine which CSV to read
+    if batch_id and batch_id != 'main':
+        csv_path = os.path.join(output_dir, f'report_{batch_id}.csv')
+        if not os.path.exists(csv_path):
+            csv_path = os.path.join(output_dir, 'final_detailed_report.csv')
+    else:
+        csv_path = os.path.join(output_dir, 'final_detailed_report.csv')
+    
+    if not os.path.exists(csv_path):
+        return jsonify({'error': 'No report data found'}), 404
+    
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        return jsonify({'error': f'Failed to read CSV: {str(e)}'}), 500
+    
+    if df.empty:
+        return jsonify({'error': 'Report is empty'}), 404
+    
+    # Parse Total Amount as numeric
+    df['Total Amount'] = pd.to_numeric(df['Total Amount'], errors='coerce').fillna(0)
+    
+    # Parse Date
+    df['Parsed Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce')
+    
+    # --- KPI Summary ---
+    summary = {
+        'total_invoices': int(len(df)),
+        'total_spend': round(float(df['Total Amount'].sum()), 2),
+        'avg_invoice': round(float(df['Total Amount'].mean()), 2),
+        'max_invoice': round(float(df['Total Amount'].max()), 2),
+        'min_invoice': round(float(df['Total Amount'].min()), 2),
+        'unique_sellers': int(df['Seller Name'].nunique()),
+        'unique_clients': int(df['Client Name'].nunique()),
+    }
+    
+    # --- Category Distribution ---
+    cat_counts = df['Category'].value_counts().to_dict()
+    cat_spend = df.groupby('Category')['Total Amount'].sum().round(2).to_dict()
+    cat_avg = df.groupby('Category')['Total Amount'].mean().round(2).to_dict()
+    
+    # --- Monthly Trends ---
+    monthly_data = {}
+    valid_dates = df.dropna(subset=['Parsed Date'])
+    if not valid_dates.empty:
+        valid_dates = valid_dates.copy()
+        valid_dates['Month'] = valid_dates['Parsed Date'].dt.to_period('M').astype(str)
+        monthly_spend = valid_dates.groupby('Month')['Total Amount'].sum().round(2)
+        monthly_count = valid_dates.groupby('Month').size()
+        monthly_data = {
+            'labels': monthly_spend.index.tolist(),
+            'spend': monthly_spend.values.tolist(),
+            'count': monthly_count.values.tolist()
+        }
+    
+    # --- Top Sellers ---
+    top_sellers = df.groupby('Seller Name')['Total Amount'].sum().round(2).sort_values(ascending=False).head(10)
+    top_sellers_data = {
+        'labels': top_sellers.index.tolist(),
+        'values': top_sellers.values.tolist()
+    }
+    
+    # --- Top Clients ---
+    top_clients = df.groupby('Client Name')['Total Amount'].sum().round(2).sort_values(ascending=False).head(10)
+    top_clients_data = {
+        'labels': top_clients.index.tolist(),
+        'values': top_clients.values.tolist()
+    }
+    
+    # --- Missing Data (Compliance) ---
+    missing = {
+        'missing_seller_tax': int(df['Seller Tax ID'].isna().sum() + (df['Seller Tax ID'] == '').sum()),
+        'missing_client_tax': int(df['Client Tax ID'].isna().sum() + (df['Client Tax ID'] == '').sum()),
+        'missing_iban': int(df['Seller IBAN'].isna().sum() + (df['Seller IBAN'] == '').sum()),
+        'total': int(len(df))
+    }
+    
+    # --- IBAN Country Distribution ---
+    iban_countries = {}
+    if 'Seller IBAN' in df.columns:
+        ibans = df['Seller IBAN'].dropna()
+        for iban in ibans:
+            iban_str = str(iban).strip()
+            if len(iban_str) >= 2:
+                country = iban_str[:2].upper()
+                iban_countries[country] = iban_countries.get(country, 0) + 1
+    
+    # --- Outliers (>2 std deviations) ---
+    outliers = []
+    if len(df) > 2:
+        mean_amt = df['Total Amount'].mean()
+        std_amt = df['Total Amount'].std()
+        outlier_df = df[abs(df['Total Amount'] - mean_amt) > 2 * std_amt]
+        for _, row in outlier_df.iterrows():
+            outliers.append({
+                'invoice_no': str(row.get('Invoice No', '')),
+                'amount': round(float(row['Total Amount']), 2),
+                'seller': str(row.get('Seller Name', '')),
+                'category': str(row.get('Category', ''))
+            })
+    
+    # --- Amount Distribution (Histogram bins) ---
+    amount_distribution = {}
+    if not df.empty:
+        amounts = df['Total Amount']
+        bins = [0, 100, 500, 1000, 5000, 10000, 50000, float('inf')]
+        bin_labels = ['0-100', '100-500', '500-1K', '1K-5K', '5K-10K', '10K-50K', '50K+']
+        hist = pd.cut(amounts, bins=bins, labels=bin_labels, right=False).value_counts().sort_index()
+        amount_distribution = {
+            'labels': hist.index.tolist(),
+            'values': hist.values.tolist()
+        }
+    
+    # --- Category Trend Over Time ---
+    cat_trend = {}
+    if not valid_dates.empty:
+        vd = valid_dates.copy()
+        pivot = vd.groupby(['Month', 'Category'])['Total Amount'].sum().round(2).unstack(fill_value=0)
+        cat_trend = {
+            'labels': pivot.index.tolist(),
+            'datasets': {col: pivot[col].values.tolist() for col in pivot.columns}
+        }
+    
+    # --- Raw Data (for table) ---
+    raw_data = []
+    for _, row in df.iterrows():
+        raw_data.append({
+            'invoice_no': str(row.get('Invoice No', '')),
+            'date': str(row.get('Date', '')),
+            'seller_name': str(row.get('Seller Name', '')),
+            'client_name': str(row.get('Client Name', '')),
+            'seller_tax_id': str(row.get('Seller Tax ID', '')),
+            'seller_iban': str(row.get('Seller IBAN', '')),
+            'client_tax_id': str(row.get('Client Tax ID', '')),
+            'total_amount': round(float(row.get('Total Amount', 0)), 2),
+            'category': str(row.get('Category', ''))
+        })
+    
+    return jsonify({
+        'summary': summary,
+        'category_distribution': cat_counts,
+        'category_spend': cat_spend,
+        'category_avg': cat_avg,
+        'monthly_trends': monthly_data,
+        'top_sellers': top_sellers_data,
+        'top_clients': top_clients_data,
+        'missing_data': missing,
+        'iban_countries': iban_countries,
+        'outliers': outliers,
+        'amount_distribution': amount_distribution,
+        'category_trend': cat_trend,
+        'raw_data': raw_data
+    })
+
+@app.route('/api/upload-csv', methods=['POST'])
+def api_upload_csv():
+    """Accept a CSV upload for manual analysis and return analytics."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if not file.filename.endswith('.csv'):
+        return jsonify({'error': 'Only CSV files are accepted'}), 400
+    
+    # Save temporarily
+    filename = secure_filename(file.filename)
+    temp_path = os.path.join(app.config['OUTPUT_FOLDER'], f'temp_analysis_{filename}')
+    file.save(temp_path)
+    
+    # Return a redirect-style response with a temp ID
+    temp_id = f'temp_{filename.replace(".csv", "")}'
+    
+    # Rename to match batch report pattern so /api/analytics can read it
+    target_path = os.path.join(app.config['OUTPUT_FOLDER'], f'report_{temp_id}.csv')
+    if os.path.exists(target_path):
+        os.remove(target_path)
+    os.rename(temp_path, target_path)
+    
+    return jsonify({'batch_id': temp_id, 'message': 'CSV uploaded successfully'})
+
+
 if __name__ == '__main__':
     print("Starting Smart Invoice Server...")
     print(f"Upload Folder: {UPLOAD_FOLDER}")

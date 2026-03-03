@@ -162,6 +162,14 @@ async function handleFiles(files) {
     downloadBtn.onclick = () => {
         window.location.href = `http://127.0.0.1:5000/download_report?batch_id=${batchId}`;
     };
+
+    // Enable Analyse Results button
+    const analyseBtn = document.getElementById('analyse-results-btn');
+    if (analyseBtn) {
+        analyseBtn.onclick = () => {
+            window.location.href = `/analytics?batch_id=${batchId}`;
+        };
+    }
 }
 
 async function processSingleFile(file, batchId) {
