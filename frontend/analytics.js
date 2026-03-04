@@ -40,6 +40,7 @@ if (typeof Chart !== 'undefined') {
 document.addEventListener('DOMContentLoaded', () => {
     loadBatchList();
     setupCSVUpload();
+    setupHeaderCSVUpload();
     setupPDFExport();
     setupTableControls();
 
@@ -54,6 +55,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAnalytics('main');
     }
 });
+
+// =========================================================================
+// HEADER CSV UPLOAD BUTTON
+// =========================================================================
+function setupHeaderCSVUpload() {
+    const btn = document.getElementById('header-upload-csv-btn');
+    const fileInput = document.getElementById('header-csv-file-input');
+    if (!btn || !fileInput) return;
+
+    btn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            uploadCSVFile(fileInput.files[0]);
+            fileInput.value = ''; // Reset so same file can be re-uploaded
+        }
+    });
+}
 
 // =========================================================================
 // DATA LOADING
@@ -878,13 +897,56 @@ function setupPDFExport() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
 
+        // Inject temporary styles to fix html2canvas rendering issues
+        const fixStyle = document.createElement('style');
+        fixStyle.id = 'pdf-export-fix';
+        fixStyle.textContent = `
+            /* Force solid backgrounds — html2canvas cannot render backdrop-filter */
+            .glass-card, .kpi-card, .chart-card {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: rgba(30, 41, 59, 0.95) !important;
+            }
+            /* Fix gradient text — background-clip: text is not supported */
+            .gradient-text {
+                -webkit-background-clip: unset !important;
+                background-clip: unset !important;
+                -webkit-text-fill-color: #06b6d4 !important;
+                color: #06b6d4 !important;
+                background: none !important;
+            }
+            /* Force all animated elements to be visible */
+            .fade-in-up {
+                opacity: 1 !important;
+                transform: none !important;
+                animation: none !important;
+            }
+            /* Make navbar and background invisible for cleaner PDF */
+            .navbar, .background-grid, footer {
+                display: none !important;
+            }
+            /* Ensure table text is visible */
+            .data-table tbody td, .data-table thead th,
+            .kpi-label, .kpi-value, .chart-title,
+            .compliance-header span, .compliance-stats span,
+            .outlier-info strong, .outlier-info span {
+                color: inherit !important;
+                opacity: 1 !important;
+            }
+        `;
+        document.head.appendChild(fixStyle);
+
+        // Small delay to let styles apply
+        await new Promise(r => setTimeout(r, 100));
+
         try {
             const dashboard = document.getElementById('dashboard-content');
             const canvas = await html2canvas(dashboard, {
                 backgroundColor: '#0B1120',
                 scale: 2,
                 useCORS: true,
-                logging: false
+                logging: false,
+                allowTaint: true
             });
 
             const { jsPDF } = window.jspdf;
@@ -907,6 +969,10 @@ function setupPDFExport() {
             console.error('PDF export failed:', e);
             alert('PDF export failed. Please try again.');
         } finally {
+            // Remove temporary fix styles
+            const fix = document.getElementById('pdf-export-fix');
+            if (fix) fix.remove();
+
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Export PDF';
         }
