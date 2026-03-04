@@ -51,7 +51,7 @@ if (fileInput) {
 function queueFiles(files) {
     // Convert FileList to Array and filter valid types
     const validFiles = Array.from(files).filter(f =>
-        ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(f.type)
+        ['image/png', 'image/jpeg', 'image/jpg', 'image/tiff', 'application/pdf'].includes(f.type)
     );
 
     if (validFiles.length === 0) return;
@@ -136,7 +136,7 @@ async function handleFiles(files) {
 
     // Iterate
     for (const file of files) {
-        if (!['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(file.type)) continue;
+        if (!['image/png', 'image/jpeg', 'image/jpg', 'image/tiff', 'application/pdf'].includes(file.type)) continue;
 
         // Update Text
         uploadText.innerText = `Processing: ${file.name}`;

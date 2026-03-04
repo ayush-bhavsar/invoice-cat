@@ -74,18 +74,24 @@ def upload_file():
         response_data_list = []
 
         for p_idx, raw_data in enumerate(raw_data_list):
-            votes = []
-            if raw_data.get('product_descriptions'):
-                cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
-                for cat in cats:
-                    if cat != "Other":
-                        votes.append(cat)
-            
-            main_category = "Uncategorized"
-            if votes:
-                main_category = Counter(votes).most_common(1)[0][0]
-            elif raw_data.get('product_descriptions'): 
-                 main_category = "Other"
+            # Check if Gemini already provided the category during extraction
+            if raw_data.get('_extracted_by') == 'gemini' and raw_data.get('category'):
+                main_category = raw_data['category']
+                print(f"   Using Gemini-provided category: {main_category} (0 extra API calls)")
+            else:
+                # Standard classification via local NN or Gemini classifier
+                votes = []
+                if raw_data.get('product_descriptions'):
+                    cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
+                    for cat in cats:
+                        if cat != "Other":
+                            votes.append(cat)
+                
+                main_category = "Uncategorized"
+                if votes:
+                    main_category = Counter(votes).most_common(1)[0][0]
+                elif raw_data.get('product_descriptions'): 
+                     main_category = "Other"
 
             # 3. Save to CSV
             if request.args.get('save') == 'true':

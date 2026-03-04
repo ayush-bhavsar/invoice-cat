@@ -25,7 +25,7 @@ def main():
             return
 
     # 2. Find Images and PDFs
-    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg', '.pdf'))]
+    files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.jpg', '.png', '.jpeg', '.pdf', '.tiff', '.tif'))]
     print(f"Found {len(files)} invoices to process.\n")
 
     # 3. Process Each File (and Save Immediately)
@@ -44,24 +44,29 @@ def main():
             page_label = f" (Page {p_idx+1})" if len(raw_data_list) > 1 else ""
             
             # B. DETERMINE CATEGORY
-            votes = []
-            if raw_data['product_descriptions']:
-                cats = predict_categories_batch(raw_data['product_descriptions'])
-                for cat in cats:
-                    votes.append(cat)
-                    
-            if votes:
-                # FIX: Filter out "Other" noise. Valid categories should win even if minority.
-                meaningful_votes = [v for v in votes if str(v) != "Other"]
-                
-                if meaningful_votes:
-                    winner = Counter(meaningful_votes).most_common(1)[0][0]
-                    main_category = str(winner)
-                else:
-                    # If everything is Other, then it's Other.
-                    main_category = "Other"
+            # Check if Gemini already provided the category during extraction
+            if raw_data.get('_extracted_by') == 'gemini' and raw_data.get('category'):
+                main_category = raw_data['category']
+                print(f"   => Using Gemini-provided category: {main_category}")
             else:
-                main_category = "Uncategorized"
+                votes = []
+                if raw_data['product_descriptions']:
+                    cats = predict_categories_batch(raw_data['product_descriptions'])
+                    for cat in cats:
+                        votes.append(cat)
+                        
+                if votes:
+                    # FIX: Filter out "Other" noise. Valid categories should win even if minority.
+                    meaningful_votes = [v for v in votes if str(v) != "Other"]
+                    
+                    if meaningful_votes:
+                        winner = Counter(meaningful_votes).most_common(1)[0][0]
+                        main_category = str(winner)
+                    else:
+                        # If everything is Other, then it's Other.
+                        main_category = "Other"
+                else:
+                    main_category = "Uncategorized"
 
             print(f"   => ID: {raw_data['invoice_id']}{page_label} | Winner: {main_category}")
 
