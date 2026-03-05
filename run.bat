@@ -6,7 +6,6 @@ echo       Smart Invoice Project - Auto Launcher
 echo ======================================================
 echo.
 
-:: 1. Check for Python
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Python is not installed or not in your PATH.
@@ -20,7 +19,6 @@ echo [OK] Python is installed.
 python --version
 echo.
 
-:: 2. Install/Upgrade Dependencies
 if exist requirements.txt (
     echo [INFO] Checking and installing dependencies...
     pip install -r requirements.txt
@@ -40,7 +38,6 @@ echo       Starting Server...
 echo ======================================================
 echo.
 
-:: 3. Run the Server
 python server.py
 
 echo.

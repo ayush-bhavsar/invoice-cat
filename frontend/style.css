@@ -25,7 +25,6 @@ body {
     min-height: 100vh;
 }
 
-/* --- Utilities --- */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -45,7 +44,6 @@ body {
     display: none !important;
 }
 
-/* --- Background Grid --- */
 .background-grid {
     position: fixed;
     top: 0;
@@ -61,7 +59,6 @@ body {
     pointer-events: none;
 }
 
-/* --- Navbar --- */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -103,7 +100,6 @@ body {
     text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
 }
 
-/* --- Buttons --- */
 .btn-primary,
 .btn-primary-lg {
     background: linear-gradient(135deg, var(--primary-cyan), var(--primary-violet));
@@ -153,7 +149,6 @@ body {
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
 }
 
-/* --- Hero Section --- */
 .hero {
     position: relative;
     padding: 120px 20px;
@@ -182,7 +177,6 @@ body {
     margin-right: auto;
 }
 
-/* --- Glass Cards (Features & Upload) --- */
 .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
@@ -228,7 +222,6 @@ body {
     line-height: 1.6;
 }
 
-/* --- Features Layout --- */
 .features-section {
     padding: 80px 20px;
     background: transparent;
@@ -248,13 +241,11 @@ body {
     gap: 30px;
 }
 
-/* --- Upload Section --- */
 .upload-section {
     padding: 60px 20px;
     background: transparent;
 }
 
-/* Upload Specific Overrides */
 .upload-section .section-title {
     margin-bottom: 5px;
 }
@@ -298,7 +289,6 @@ body {
     border-bottom-style: solid;
 }
 
-/* --- Results --- */
 .result-header {
     border-bottom: 1px solid var(--glass-border);
     display: flex;
@@ -354,7 +344,6 @@ body {
     color: #fbbf24;
 }
 
-/* --- Animations --- */
 @keyframes shimmer {
     0% {
         background-position: 0% 50%;
@@ -401,7 +390,6 @@ body {
     transform: translateY(0);
 }
 
-/* Loader */
 .loader {
     border: 3px solid rgba(255, 255, 255, 0.1);
     border-top: 3px solid var(--primary-cyan);
@@ -419,7 +407,6 @@ body {
     }
 }
 
-/* Footer */
 footer {
     text-align: center;
     padding: 40px;
@@ -429,16 +416,11 @@ footer {
     margin-top: auto;
 }
 
-/* ===================================================================
-   ANALYTICS DASHBOARD STYLES
-   =================================================================== */
-
 .active-link {
     color: var(--primary-cyan) !important;
     text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
 }
 
-/* --- Analytics Layout --- */
 .analytics-main {
     padding: 30px 20px 60px;
     flex: 1;
@@ -474,7 +456,6 @@ footer {
     gap: 10px;
 }
 
-/* --- Glass Select & Input --- */
 .glass-select,
 .glass-input {
     background: var(--glass-bg);
@@ -500,7 +481,6 @@ footer {
     color: var(--text-main);
 }
 
-/* --- KPI Grid --- */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -565,7 +545,6 @@ footer {
     color: #34d399;
 }
 
-/* --- Chart Grids --- */
 .charts-grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -609,7 +588,6 @@ footer {
     height: 350px;
 }
 
-/* --- Compliance Bars --- */
 .compliance-grid {
     display: flex;
     flex-direction: column;
@@ -651,7 +629,6 @@ footer {
     font-size: 0.82rem;
 }
 
-/* --- Outlier List --- */
 .outlier-list {
     display: flex;
     flex-direction: column;
@@ -715,7 +692,6 @@ footer {
     text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
-/* --- Data Table --- */
 .table-header {
     display: flex;
     justify-content: space-between;
@@ -797,7 +773,6 @@ footer {
     white-space: nowrap;
 }
 
-/* --- CSV Upload Card --- */
 .csv-upload-card {
     max-width: 600px;
     margin: 40px auto;
@@ -829,7 +804,6 @@ footer {
     margin: 0 0 8px;
 }
 
-/* --- Analytics Loader --- */
 .analytics-loader {
     text-align: center;
     padding: 80px 20px;
@@ -841,13 +815,11 @@ footer {
     font-size: 1rem;
 }
 
-/* --- Text utilities --- */
 .text-muted {
     color: var(--text-muted);
     font-size: 0.85rem;
 }
 
-/* --- Batch Progress Bar (upload page) --- */
 .batch-progress {
     margin-top: 20px;
 }
@@ -869,7 +841,6 @@ footer {
     width: 0%;
 }
 
-/* --- Settings Gear & Modal --- */
 .settings-btn {
     background: none;
     border: 1px solid var(--glass-border);
@@ -1079,7 +1050,6 @@ footer {
     flex-shrink: 0;
 }
 
-/* --- Responsive --- */
 @media (max-width: 768px) {
     .charts-grid-2 {
         grid-template-columns: 1fr;

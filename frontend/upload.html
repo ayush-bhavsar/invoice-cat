@@ -6,16 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Invoice - Smart Invoice Extractor</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts: Inter for that clean, modern look -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
     <div class="background-grid"></div>
 
-    <!-- Navigation -->
     <nav class="navbar">
         <div class="logo">
             <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
@@ -43,7 +40,6 @@
         </div>
     </nav>
 
-    <!-- Settings Modal -->
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
@@ -90,7 +86,6 @@
         }
     </style>
 
-    <!-- Upload Section -->
     <section id="upload" class="upload-section">
         <div class="container">
             <h2 class="section-title">Drop your file here</h2>
@@ -104,7 +99,6 @@
                 <input type="file" id="file-input" hidden accept=".png, .jpg, .jpeg, .pdf, .tiff, .tif" multiple>
                 <div id="loader" class="loader hidden"></div>
 
-                <!-- Batch Progress (Hidden initially) -->
                 <div id="batch-progress" class="batch-progress hidden">
                     <p id="progress-text">Processed 0 / 0</p>
                     <div class="progress-bar-container">
@@ -113,7 +107,6 @@
                 </div>
             </div>
 
-            <!-- Queue UI (Hidden initially, shows after files selected) -->
             <div id="queue-ui" class="hidden" style="text-align: center; margin-top: 20px;">
                 <p id="queue-text" style="font-weight: 600; margin-bottom: 15px; color: var(--text);">0 files selected
                     ready for processing.</p>
@@ -123,7 +116,6 @@
                         class="fa-solid fa-xmark"></i> Clear</button>
             </div>
 
-            <!-- Global Actions -->
             <div id="global-actions" class="hidden" style="text-align: center; margin-top: 20px;">
                 <button class="btn-primary" id="download-report-btn"><i class="fa-solid fa-file-csv"></i> Download Final
                     Report</button>
@@ -135,7 +127,6 @@
                     Batch</button>
             </div>
 
-            <!-- Results Section (Hidden initially) -->
             <div id="result-container" class="result-container hidden fade-in">
                 <div class="glass-card result-card">
                     <div class="result-header">
@@ -159,7 +150,6 @@
                     </div>
 
                     <div class="result-actions">
-                        <!-- In a real app, this would use the JSON to build a CSV -->
                         <button class="btn-primary" id="download-btn"><i class="fa-solid fa-download"></i> Download
                             Report</button>
                         <button class="btn-secondary" id="reset-btn">Upload Another</button>

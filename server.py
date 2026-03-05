@@ -4,7 +4,6 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS 
 import pandas as pd
 
-# Import our custom modules
 try:
     from ocr_engine import extract_invoice_data
     from classifier import predict_category
@@ -12,22 +11,20 @@ except ImportError:
     print("Error imports. Run from project root.")
 
 app = Flask(__name__, static_folder='frontend')
-CORS(app) # Enable CORS just in case
+CORS(app)
 
-# Configuration
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'invoices')
-OUTPUT_FOLDER = os.path.join(os.getcwd(), 'output') # Explicitly define output folder
+OUTPUT_FOLDER = os.path.join(os.getcwd(), 'output')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True) # Ensure it exists
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER # Save to config
+app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
 @app.route('/')
 def serve_index():
     return send_from_directory('frontend', 'index.html')
 
-# Serve other static files (css, js) from frontend folder
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory('frontend', path)
@@ -56,10 +53,8 @@ def upload_file():
         
         print(f"Processing {filename}...")
 
-        # Get API key from request header (sent by browser settings modal)
         user_api_key = request.headers.get('X-API-Key')
 
-        # 1. OCR Extraction
         try:
             raw_data_list = extract_invoice_data(save_path, api_key=user_api_key)
         except Exception as e:
@@ -69,7 +64,6 @@ def upload_file():
         if not raw_data_list:
             return jsonify({'error': "OCR extracted no data"}), 400
 
-        # 2. Classification
         from collections import Counter
         from classifier import predict_categories_batch
         classification_method = request.args.get('method', 'local_nn')
@@ -77,12 +71,10 @@ def upload_file():
         response_data_list = []
 
         for p_idx, raw_data in enumerate(raw_data_list):
-            # Check if Gemini already provided the category during extraction
             if raw_data.get('_extracted_by') == 'gemini' and raw_data.get('category'):
                 main_category = raw_data['category']
                 print(f"   Using Gemini-provided category: {main_category} (0 extra API calls)")
             else:
-                # Standard classification via local NN or Gemini classifier
                 votes = []
                 if raw_data.get('product_descriptions'):
                     cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method, api_key=user_api_key)
@@ -96,7 +88,6 @@ def upload_file():
                 elif raw_data.get('product_descriptions'): 
                      main_category = "Other"
 
-            # 3. Save to CSV
             if request.args.get('save') == 'true':
                 batch_id = request.args.get('batch_id')
                 print(f"Saving to CSV. Batch ID: {batch_id} (Page {p_idx+1})")
@@ -122,7 +113,6 @@ def upload_file():
         return jsonify(response_data_list)
 
 def save_row_to_csv(data, batch_id=None):
-    # 1. Save to Main Report (Archive)
     OUTPUT_CSV = os.path.join(app.config['OUTPUT_FOLDER'], 'final_detailed_report.csv')
     header = not os.path.exists(OUTPUT_CSV)
     df = pd.DataFrame([data])
@@ -131,7 +121,6 @@ def save_row_to_csv(data, batch_id=None):
     except Exception as e:
         print(f"Error saving to main report: {e}")
         
-    # 2. Save to Batch Report (if batch_id exists)
     if batch_id:
         BATCH_CSV = os.path.join(app.config['OUTPUT_FOLDER'], f'report_{batch_id}.csv')
         batch_header = not os.path.exists(BATCH_CSV)
@@ -155,7 +144,6 @@ def download_report():
         else:
             print(f"Batch report not found: {path}")
     
-    # Fallback to main report
     print("Serving fallback main report")
     OUTPUT_CSV = os.path.join(app.config['OUTPUT_FOLDER'], 'final_detailed_report.csv')
     if not os.path.exists(OUTPUT_CSV):
@@ -174,7 +162,6 @@ def api_batch_list():
     output_dir = app.config['OUTPUT_FOLDER']
     batches = []
     
-    # Main report
     main_report = os.path.join(output_dir, 'final_detailed_report.csv')
     if os.path.exists(main_report):
         batches.append({
@@ -183,7 +170,6 @@ def api_batch_list():
             'filename': 'final_detailed_report.csv'
         })
     
-    # Batch reports
     for f in os.listdir(output_dir):
         if f.startswith('report_') and f.endswith('.csv'):
             batch_id = f.replace('report_', '').replace('.csv', '')
@@ -201,7 +187,6 @@ def api_analytics():
     batch_id = request.args.get('batch_id')
     output_dir = app.config['OUTPUT_FOLDER']
     
-    # Determine which CSV to read
     if batch_id and batch_id != 'main':
         csv_path = os.path.join(output_dir, f'report_{batch_id}.csv')
         if not os.path.exists(csv_path):
@@ -220,13 +205,10 @@ def api_analytics():
     if df.empty:
         return jsonify({'error': 'Report is empty'}), 404
     
-    # Parse Total Amount as numeric
     df['Total Amount'] = pd.to_numeric(df['Total Amount'], errors='coerce').fillna(0)
     
-    # Parse Date
     df['Parsed Date'] = pd.to_datetime(df['Date'], format='mixed', errors='coerce')
     
-    # --- KPI Summary ---
     summary = {
         'total_invoices': int(len(df)),
         'total_spend': round(float(df['Total Amount'].sum()), 2),
@@ -237,12 +219,10 @@ def api_analytics():
         'unique_clients': int(df['Client Name'].nunique()),
     }
     
-    # --- Category Distribution ---
     cat_counts = df['Category'].value_counts().to_dict()
     cat_spend = df.groupby('Category')['Total Amount'].sum().round(2).to_dict()
     cat_avg = df.groupby('Category')['Total Amount'].mean().round(2).to_dict()
     
-    # --- Monthly Trends ---
     monthly_data = {}
     valid_dates = df.dropna(subset=['Parsed Date'])
     if not valid_dates.empty:
@@ -256,21 +236,18 @@ def api_analytics():
             'count': monthly_count.values.tolist()
         }
     
-    # --- Top Sellers ---
     top_sellers = df.groupby('Seller Name')['Total Amount'].sum().round(2).sort_values(ascending=False).head(10)
     top_sellers_data = {
         'labels': top_sellers.index.tolist(),
         'values': top_sellers.values.tolist()
     }
     
-    # --- Top Clients ---
     top_clients = df.groupby('Client Name')['Total Amount'].sum().round(2).sort_values(ascending=False).head(10)
     top_clients_data = {
         'labels': top_clients.index.tolist(),
         'values': top_clients.values.tolist()
     }
     
-    # --- Missing Data (Compliance) ---
     missing = {
         'missing_seller_tax': int(df['Seller Tax ID'].isna().sum() + (df['Seller Tax ID'] == '').sum()),
         'missing_client_tax': int(df['Client Tax ID'].isna().sum() + (df['Client Tax ID'] == '').sum()),
@@ -278,7 +255,6 @@ def api_analytics():
         'total': int(len(df))
     }
     
-    # --- IBAN Country Distribution ---
     iban_countries = {}
     if 'Seller IBAN' in df.columns:
         ibans = df['Seller IBAN'].dropna()
@@ -288,7 +264,6 @@ def api_analytics():
                 country = iban_str[:2].upper()
                 iban_countries[country] = iban_countries.get(country, 0) + 1
     
-    # --- Outliers (>2 std deviations) ---
     outliers = []
     if len(df) > 2:
         mean_amt = df['Total Amount'].mean()
@@ -302,7 +277,6 @@ def api_analytics():
                 'category': str(row.get('Category', ''))
             })
     
-    # --- Amount Distribution (Histogram bins) ---
     amount_distribution = {}
     if not df.empty:
         amounts = df['Total Amount']
@@ -314,7 +288,6 @@ def api_analytics():
             'values': hist.values.tolist()
         }
     
-    # --- Category Trend Over Time ---
     cat_trend = {}
     if not valid_dates.empty:
         vd = valid_dates.copy()
@@ -324,7 +297,6 @@ def api_analytics():
             'datasets': {col: pivot[col].values.tolist() for col in pivot.columns}
         }
     
-    # --- Raw Data (for table) ---
     raw_data = []
     for _, row in df.iterrows():
         raw_data.append({
@@ -368,15 +340,12 @@ def api_upload_csv():
     if not file.filename.endswith('.csv'):
         return jsonify({'error': 'Only CSV files are accepted'}), 400
     
-    # Save temporarily
     filename = secure_filename(file.filename)
     temp_path = os.path.join(app.config['OUTPUT_FOLDER'], f'temp_analysis_{filename}')
     file.save(temp_path)
     
-    # Return a redirect-style response with a temp ID
     temp_id = f'temp_{filename.replace(".csv", "")}'
     
-    # Rename to match batch report pattern so /api/analytics can read it
     target_path = os.path.join(app.config['OUTPUT_FOLDER'], f'report_{temp_id}.csv')
     if os.path.exists(target_path):
         os.remove(target_path)

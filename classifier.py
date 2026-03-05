@@ -6,15 +6,12 @@ import numpy as np
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load environment variables (API Keys)
 load_dotenv()
 
-# Configure Gemini
 GEMINI_API_KEY = os.environ.get("LLM_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Paths to the saved model and preprocessors
 MODEL_PATH = 'nn_model.keras'
 VECTORIZER_PATH = 'vectorizer.pkl'
 ENCODER_PATH = 'label_encoder.pkl'
@@ -35,7 +32,6 @@ def load_resources():
     except Exception as e:
         print(f"Error loading model resources: {e}")
 
-# Load at startup
 load_resources()
 
 def predict_gemini_batch(product_names, api_key=None):
@@ -49,9 +45,8 @@ def predict_gemini_batch(product_names, api_key=None):
         
     try:
         genai.configure(api_key=effective_key)
-        model = genai.GenerativeModel('gemini-2.5-flash') # Using fast model for categorization
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
-        # We need to give it the list of exact categories you expect
         valid_categories = [
             "Hardware", "Books & Media", "Furniture", "Services", "Electronics", 
             "Clothing", "Kitchen", "Office Supplies", "Beverages", "Other"
@@ -103,7 +98,6 @@ def predict_gemini_batch(product_names, api_key=None):
             if cat in valid_categories:
                 final_categories.append(cat)
             else:
-                # Fallback check
                 found = False
                 for valid in valid_categories:
                     if valid.lower() in cat.lower():
@@ -134,7 +128,6 @@ def predict_categories_batch(product_names, method='local_nn', api_key=None):
             return result
         print("Gemini failed or rate-limited. Seamlessly falling back to local_nn...")
 
-    # Fallback to local NN batch (much faster)
     if _model is None or _vectorizer is None or _label_encoder is None:
         return ["Unknown"] * len(product_names)
         

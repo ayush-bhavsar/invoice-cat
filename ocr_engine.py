@@ -8,17 +8,13 @@ import re
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.environ.get("LLM_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Uncomment if Tesseract is not in your PATH:
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-
 try:
-    import fitz  # PyMuPDF
+    import fitz
     PYMUPDF_AVAILABLE = True
 except ImportError:
     PYMUPDF_AVAILABLE = False
@@ -72,7 +68,6 @@ def _extract_from_image(img):
         "product_descriptions": []
     }
 
-    # 1. Structure Finding (Start and End of Table)
     items_y_threshold = height
     total_y_location = height
 
@@ -87,7 +82,6 @@ def _extract_from_image(img):
                 if ocr_data['top'][i] < total_y_location:
                     total_y_location = ocr_data['top'][i]
 
-    # 2. Extract Total Amount
     if total_y_location != height:
         line_text = []
         for i in range(n_boxes):
@@ -105,7 +99,6 @@ def _extract_from_image(img):
         if valid_amounts:
             data["total_amount"] = f"{max(valid_amounts):.2f}"
 
-    # 3. Main Loop
     prod_blacklist = ["description", "qty", "um", "net", "price", "vat", "gross", "worth", "total", "summary", "no.", "items"]
     name_blacklist = ["date", "issue", "invoice", "no:", "number", "id", "tax", "iban", "page", "seller:", "client:", "to:", "from:"]
 
@@ -120,44 +113,38 @@ def _extract_from_image(img):
         y = ocr_data['top'][i]
         text_lower = text.lower()
 
-        # ID & Date
         if "invoice" in text_lower:
             if i + 1 < n_boxes:
                 if "no" in ocr_data['text'][i+1].lower() and i + 2 < n_boxes:
                     data["invoice_id"] = ocr_data['text'][i+2]
                 elif ":" in text:
                     data["invoice_id"] = text.split(":")[-1]
-        # Date — multiple formats (word boundaries prevent matching inside tax IDs)
         if data["date"] == "Not Found":
             date_patterns = [
-                r'\b\d{2}/\d{2}/\d{4}\b',       # dd/mm/yyyy
-                r'\b\d{4}-\d{2}-\d{2}\b',       # yyyy-mm-dd
-                r'\b\d{2}\.\d{2}\.\d{4}\b',     # dd.mm.yyyy
-                r'\b\d{2}-\d{2}-\d{4}\b',       # dd-mm-yyyy
-                r'\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b',  # 1 Jan 2024
+                r'\b\d{2}/\d{2}/\d{4}\b',
+                r'\b\d{4}-\d{2}-\d{2}\b',
+                r'\b\d{2}\.\d{2}\.\d{4}\b',
+                r'\b\d{2}-\d{2}-\d{4}\b',
+                r'\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b',
             ]
-            # Skip if text looks like a tax ID (xxx-xx-xxxx)
             if not re.match(r'^\d{3}-\d{2}-\d{4}$', text):
                 for dp in date_patterns:
                     if re.search(dp, text, re.IGNORECASE):
                         data["date"] = text
                         break
 
-        # Header Zone
         if 100 < y < items_y_threshold:
-            # Tax ID — multiple formats
             tax_patterns = [
-                r'\d{3}-\d{2}-\d{4}',                              # US EIN
-                r'\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z\d][A-Z]',         # Indian GST
-                r'[A-Z]{2}\d{8,12}',                                # EU VAT
-                r'\d{2}-\d{7}',                                     # Generic tax
+                r'\d{3}-\d{2}-\d{4}',
+                r'\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z\d][A-Z]',
+                r'[A-Z]{2}\d{8,12}',
+                r'\d{2}-\d{7}',
             ]
             for tp in tax_patterns:
                 if re.match(tp, text):
                     if x < (width / 2): data["seller_tax_id"] = text
                     else: data["client_tax_id"] = text
                     break
-            # IBAN — any 2-letter country prefix
             if re.match(r'[A-Z]{2}\d{2}[A-Z0-9]{10,30}', text):
                 if x < (width / 2): data["seller_iban"] = text
 
@@ -169,7 +156,6 @@ def _extract_from_image(img):
                 else:
                     if not re.search(r'\d', text): client_lines.append(text)
 
-        # Products
         if y > items_y_threshold and y < total_y_location:
             if any(bad in text_lower for bad in prod_blacklist): continue
             if re.match(r'^[\d.,\s%$]+$', text): continue
@@ -179,16 +165,12 @@ def _extract_from_image(img):
     if seller_lines: data["seller_name"] = " ".join(seller_lines[:3]).replace("of ", "")
     if client_lines: data["client_name"] = " ".join(client_lines[:3])
 
-    # Store raw OCR text for potential Gemini fallback
     all_text_pieces = [t for t in ocr_data['text'] if t.strip()]
     data["_raw_ocr_text"] = " ".join(all_text_pieces)
 
     return data
 
 
-# =========================================================================
-# EXTRACTION QUALITY SCORING
-# =========================================================================
 def _extraction_quality(data):
     """Score how many key fields were successfully extracted (0-5)."""
     score = 0
@@ -200,9 +182,6 @@ def _extraction_quality(data):
     return score
 
 
-# =========================================================================
-# GEMINI FALLBACK — EXTRACTION + CLASSIFICATION IN ONE CALL
-# =========================================================================
 def _extract_with_gemini(ocr_text, api_key=None):
     """
     Single Gemini API call that extracts all invoice fields AND classifies.
@@ -213,7 +192,6 @@ def _extract_with_gemini(ocr_text, api_key=None):
         return None
 
     try:
-        # Configure with the effective key (per-request or .env fallback)
         genai.configure(api_key=effective_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
 
@@ -245,7 +223,6 @@ Rules:
         response = model.generate_content(prompt)
         text = response.text.strip()
 
-        # Clean potential markdown wrapping
         if text.startswith("```json"):
             text = text[7:]
         if text.startswith("```"):
@@ -256,7 +233,6 @@ Rules:
 
         result = json.loads(text)
 
-        # Validate the category
         valid_categories = [
             "Hardware", "Books & Media", "Furniture", "Services", "Electronics",
             "Clothing", "Kitchen", "Office Supplies", "Beverages", "Other"
@@ -264,14 +240,12 @@ Rules:
         if result.get('category') not in valid_categories:
             result['category'] = 'Other'
 
-        # Ensure total_amount is formatted
         try:
             amt = float(str(result.get('total_amount', '0')).replace(',', ''))
             result['total_amount'] = f"{amt:.2f}"
         except (ValueError, TypeError):
             result['total_amount'] = '0.00'
 
-        # Mark that Gemini provided this extraction
         result['_extracted_by'] = 'gemini'
         print(f"   [OK] Gemini extraction+classification succeeded")
         return result
@@ -281,9 +255,6 @@ Rules:
         return None
 
 
-# =========================================================================
-# MAIN EXTRACTION ENTRY POINT
-# =========================================================================
 def extract_invoice_data(file_path, api_key=None):
     print(f"   Scanning: {file_path}...")
 
@@ -307,7 +278,6 @@ def extract_invoice_data(file_path, api_key=None):
             print(f"   Heuristic extraction quality: {quality}/5")
 
             if quality < 3:
-                # Too many missing fields — try Gemini fallback
                 print(f"   Low quality score — trying Gemini fallback...")
                 raw_text = page_data.get('_raw_ocr_text', '')
                 gemini_result = _extract_with_gemini(raw_text, api_key=api_key)

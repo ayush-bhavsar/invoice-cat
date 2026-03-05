@@ -1,14 +1,8 @@
-// =========================================================================
-// Analytics Dashboard — analytics.js
-// =========================================================================
-
-// --- Global State ---
 let analyticsData = null;
 let chartInstances = {};
 let currentSortCol = null;
 let currentSortAsc = true;
 
-// --- Color Palette ---
 const COLORS = [
     '#06b6d4', '#8b5cf6', '#f472b6', '#34d399', '#fbbf24',
     '#60a5fa', '#fb923c', '#a78bfa', '#38bdf8', '#f87171',
@@ -17,7 +11,6 @@ const COLORS = [
 
 const COLORS_ALPHA = COLORS.map(c => c + '33');
 
-// --- Chart.js Global Defaults ---
 if (typeof Chart !== 'undefined') {
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Inter', sans-serif";
@@ -34,9 +27,6 @@ if (typeof Chart !== 'undefined') {
     Chart.defaults.scale.border = { color: 'rgba(255,255,255,0.06)' };
 }
 
-// =========================================================================
-// INIT
-// =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     loadBatchList();
     setupCSVUpload();
@@ -44,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPDFExport();
     setupTableControls();
 
-    // Check URL params for auto-load
     const params = new URLSearchParams(window.location.search);
     const batchId = params.get('batch_id');
 
@@ -56,9 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// =========================================================================
-// HEADER CSV UPLOAD BUTTON
-// =========================================================================
 function setupHeaderCSVUpload() {
     const btn = document.getElementById('header-upload-csv-btn');
     const fileInput = document.getElementById('header-csv-file-input');
@@ -69,14 +55,11 @@ function setupHeaderCSVUpload() {
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
             uploadCSVFile(fileInput.files[0]);
-            fileInput.value = ''; // Reset so same file can be re-uploaded
+            fileInput.value = '';
         }
     });
 }
 
-// =========================================================================
-// DATA LOADING
-// =========================================================================
 async function loadBatchList() {
     try {
         const res = await fetch('/api/batch-list');
@@ -132,9 +115,6 @@ async function loadAnalytics(batchId) {
     }
 }
 
-// =========================================================================
-// CSV UPLOAD
-// =========================================================================
 function setupCSVUpload() {
     const dropZone = document.getElementById('csv-drop-zone');
     const fileInput = document.getElementById('csv-file-input');
@@ -212,9 +192,6 @@ async function uploadCSVFile(file) {
     }
 }
 
-// =========================================================================
-// RENDER ALL DASHBOARD COMPONENTS
-// =========================================================================
 function renderDashboard(data) {
     renderKPIs(data.summary);
     renderCategoryDistribution(data.category_distribution);
@@ -228,16 +205,12 @@ function renderDashboard(data) {
     renderDataTable(data.raw_data);
     populateCategoryFilter(data.category_distribution);
 
-    // Trigger fade-in animations
     document.querySelectorAll('.fade-in-up').forEach((el, i) => {
         el.style.animationDelay = `${i * 0.08}s`;
         el.classList.add('visible');
     });
 }
 
-// =========================================================================
-// KPI CARDS
-// =========================================================================
 function renderKPIs(summary) {
     animateValue('kpi-total-invoices', summary.total_invoices, false);
     animateValue('kpi-total-spend', summary.total_spend, true);
@@ -299,10 +272,6 @@ function animateValue(elementId, targetValue, isCurrency) {
     requestAnimationFrame(update);
 }
 
-// =========================================================================
-// CHARTS
-// =========================================================================
-
 function destroyChart(id) {
     if (chartInstances[id]) {
         chartInstances[id].destroy();
@@ -310,7 +279,6 @@ function destroyChart(id) {
     }
 }
 
-// --- Category Distribution (Donut) ---
 function renderCategoryDistribution(catData) {
     destroyChart('category-distribution');
     const ctx = document.getElementById('chart-category-distribution');
@@ -344,7 +312,6 @@ function renderCategoryDistribution(catData) {
     });
 }
 
-// --- Category Spend (Vertical Bar — using canvas 2D API fallback) ---
 function renderCategorySpend(catSpend) {
     const canvas = document.getElementById('chart-category-spend');
     if (!canvas || !catSpend) return;
@@ -354,12 +321,10 @@ function renderCategorySpend(catSpend) {
 
     if (labels.length === 0) return;
 
-    // Use raw Canvas 2D drawing since Chart.js bar rendering has a known
-    // issue with base:null in certain CDN builds
     const parent = canvas.parentElement;
     const width = parent.clientWidth;
     const height = parent.clientHeight || 300;
-    canvas.width = width * 2;   // retina
+    canvas.width = width * 2;
     canvas.height = height * 2;
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
@@ -376,10 +341,8 @@ function renderCategorySpend(catSpend) {
     const totalBarsW = labels.length * barW + (labels.length - 1) * barGap;
     const offsetX = padding.left + (chartW - totalBarsW) / 2;
 
-    // Clear
     ctx.clearRect(0, 0, width, height);
 
-    // Draw Y-axis gridlines and labels
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -388,7 +351,6 @@ function renderCategorySpend(catSpend) {
         const val = (maxVal / gridSteps) * i;
         const y = padding.top + chartH - (chartH * (val / maxVal));
 
-        // Gridline
         ctx.strokeStyle = 'rgba(255,255,255,0.06)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -396,7 +358,6 @@ function renderCategorySpend(catSpend) {
         ctx.lineTo(width - padding.right, y);
         ctx.stroke();
 
-        // Label
         ctx.fillStyle = '#94a3b8';
         let label;
         if (val >= 1000000) label = '$' + (val / 1000000).toFixed(1) + 'M';
@@ -405,16 +366,13 @@ function renderCategorySpend(catSpend) {
         ctx.fillText(label, padding.left - 8, y);
     }
 
-    // Draw bars with animation
     values.forEach((val, i) => {
         const barH = maxVal > 0 ? (val / maxVal) * chartH : 0;
         const x = offsetX + i * (barW + barGap);
         const y = padding.top + chartH - barH;
 
-        // Bar
         ctx.fillStyle = COLORS[i % COLORS.length];
         ctx.beginPath();
-        // Rounded top corners
         const r = Math.min(6, barW / 2);
         ctx.moveTo(x, padding.top + chartH);
         ctx.lineTo(x, y + r);
@@ -424,10 +382,9 @@ function renderCategorySpend(catSpend) {
         ctx.closePath();
         ctx.fill();
 
-        // X-axis label
         ctx.save();
         ctx.translate(x + barW / 2, padding.top + chartH + 10);
-        ctx.rotate(Math.PI / 6); // 30 degrees
+        ctx.rotate(Math.PI / 6);
         ctx.fillStyle = '#94a3b8';
         ctx.font = '10px Inter, sans-serif';
         ctx.textAlign = 'left';
@@ -437,7 +394,6 @@ function renderCategorySpend(catSpend) {
     });
 }
 
-// --- Monthly Spending Trend (Line + Bar Combo) ---
 function renderMonthlyTrend(monthlyData) {
     destroyChart('monthly-spend');
     const ctx = document.getElementById('chart-monthly-spend');
@@ -517,7 +473,6 @@ function renderMonthlyTrend(monthlyData) {
     });
 }
 
-// --- Category Trend (Stacked Area) ---
 function renderCategoryTrend(catTrend) {
     destroyChart('category-trend');
     const ctx = document.getElementById('chart-category-trend');
@@ -564,7 +519,6 @@ function renderCategoryTrend(catTrend) {
     });
 }
 
-// --- Amount Distribution (Histogram — Canvas 2D) ---
 function renderAmountDistribution(distData) {
     const canvas = document.getElementById('chart-amount-distribution');
     if (!canvas || !distData || !distData.labels) return;
@@ -596,7 +550,6 @@ function renderAmountDistribution(distData) {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Y-axis gridlines and labels
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -616,7 +569,6 @@ function renderAmountDistribution(distData) {
         ctx.fillText(String(val), padding.left - 8, y);
     }
 
-    // Draw bars
     values.forEach((val, i) => {
         const barH = maxVal > 0 ? (val / maxVal) * chartH : 0;
         const x = offsetX + i * (barW + barGap);
@@ -633,7 +585,6 @@ function renderAmountDistribution(distData) {
         ctx.closePath();
         ctx.fill();
 
-        // X-axis label
         ctx.save();
         ctx.translate(x + barW / 2, padding.top + chartH + 8);
         ctx.fillStyle = '#94a3b8';
@@ -643,7 +594,6 @@ function renderAmountDistribution(distData) {
         ctx.fillText(labels[i], 0, 0);
         ctx.restore();
 
-        // Value on top of bar
         if (val > 0) {
             ctx.fillStyle = '#e2e8f0';
             ctx.font = 'bold 11px Inter, sans-serif';
@@ -654,7 +604,6 @@ function renderAmountDistribution(distData) {
     });
 }
 
-// --- IBAN Country Distribution (Donut) ---
 function renderIBANCountries(ibanData) {
     destroyChart('iban-countries');
     const ctx = document.getElementById('chart-iban-countries');
@@ -706,9 +655,6 @@ function getCountryName(code) {
     return map[code] || `🌍 ${code}`;
 }
 
-// =========================================================================
-// COMPLIANCE / DATA COMPLETENESS
-// =========================================================================
 function renderCompliance(missing) {
     const grid = document.getElementById('compliance-grid');
     if (!grid || !missing) return;
@@ -744,9 +690,6 @@ function renderCompliance(missing) {
     }).join('');
 }
 
-// =========================================================================
-// OUTLIERS
-// =========================================================================
 function renderOutliers(outliers) {
     const section = document.getElementById('outliers-section');
     const list = document.getElementById('outlier-list');
@@ -770,9 +713,6 @@ function renderOutliers(outliers) {
     `).join('');
 }
 
-// =========================================================================
-// DATA TABLE
-// =========================================================================
 let tableData = [];
 
 function renderDataTable(rawData) {
@@ -886,9 +826,6 @@ function populateCategoryFilter(catData) {
     });
 }
 
-// =========================================================================
-// PDF EXPORT
-// =========================================================================
 function setupPDFExport() {
     const btn = document.getElementById('export-pdf-btn');
     if (!btn) return;
@@ -897,17 +834,14 @@ function setupPDFExport() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
 
-        // Inject temporary styles to fix html2canvas rendering issues
         const fixStyle = document.createElement('style');
         fixStyle.id = 'pdf-export-fix';
         fixStyle.textContent = `
-            /* Force solid backgrounds — html2canvas cannot render backdrop-filter */
             .glass-card, .kpi-card, .chart-card {
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
                 background: rgba(30, 41, 59, 0.95) !important;
             }
-            /* Fix gradient text — background-clip: text is not supported */
             .gradient-text {
                 -webkit-background-clip: unset !important;
                 background-clip: unset !important;
@@ -915,17 +849,14 @@ function setupPDFExport() {
                 color: #06b6d4 !important;
                 background: none !important;
             }
-            /* Force all animated elements to be visible */
             .fade-in-up {
                 opacity: 1 !important;
                 transform: none !important;
                 animation: none !important;
             }
-            /* Make navbar and background invisible for cleaner PDF */
             .navbar, .background-grid, footer {
                 display: none !important;
             }
-            /* Ensure table text is visible */
             .data-table tbody td, .data-table thead th,
             .kpi-label, .kpi-value, .chart-title,
             .compliance-header span, .compliance-stats span,
@@ -936,7 +867,6 @@ function setupPDFExport() {
         `;
         document.head.appendChild(fixStyle);
 
-        // Small delay to let styles apply
         await new Promise(r => setTimeout(r, 100));
 
         try {
@@ -969,7 +899,6 @@ function setupPDFExport() {
             console.error('PDF export failed:', e);
             alert('PDF export failed. Please try again.');
         } finally {
-            // Remove temporary fix styles
             const fix = document.getElementById('pdf-export-fix');
             if (fix) fix.remove();
 

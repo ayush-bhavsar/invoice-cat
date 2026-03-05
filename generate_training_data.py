@@ -5,7 +5,6 @@ import os
 def generate_csv():
     print("Generating FINAL V5 Training Data (Heavy Keywords Only)...")
 
-    # STRICT CATEGORIES - No ambiguous words allowed.
     categories = {
         "Electronics": [
             "Computer", "Server", "Laptop", "Desktop", "Workstation", "Monitor", "Screen",
@@ -45,7 +44,7 @@ def generate_csv():
         ],
         "Beverages": [
             "Water", "Soda", "Juice", "Cola", "Pepsi", "Coke", "Sprite", "Fanta", "Dr Pepper",
-            "Beer", "Ale", "Lager", "Stout", "IPA", "Cider", "Wifi", # Wait, Wifi is electronics. Removing.
+            "Beer", "Ale", "Lager", "Stout", "IPA", "Cider",
             "Wine", "Merlot", "Cabernet", "Chardonnay", "Pinot", "Sauvignon", "Rose", "Prosecco",
             "Champagne", "Sparkling", "Liquor", "Vodka", "Gin", "Rum", "Tequila", "Whiskey",
             "Bourbon", "Scotch", "Brandy", "Cognac", "Liqueur", "Coffee", "Tea", "Espresso"
@@ -80,28 +79,19 @@ def generate_csv():
 
     data = []
 
-    # --- BUILD THE DATASET (PURE & REPEATED) ---
-    # Since we removed the "Random Adjective" multiplier, we need to repeat these words
-    # to give them enough weight against the noise/garbage words.
-    
     for category, items in categories.items():
         for item in items:
-            # Add the item itself multiple times to strengthen the signal
             for _ in range(5): 
                 data.append([item, category])
             
-            # Simple Plurals (Naive but effective for English)
             data.append([item + "s", category]) 
             
-            # Compound words that really matter
             if category == "Kitchen":
                 data.append([f"Set of {item}s", category])
             if category == "Furniture":
                 data.append([f"Marble {item}", category])
                 data.append([f"Wooden {item}", category])
 
-    # --- THE GARBAGE BIN (Footer Text) ---
-    # These must NOT be classified as any of the above.
     garbage_words = [
         "Total", "Subtotal", "Tax", "VAT", "Amount", "Due", "Paid", "Balance", "Net", "Gross",
         "Terms", "Conditions", "Registered", "Office", "Page", "Invoice", "Number", "No.",
@@ -113,7 +103,7 @@ def generate_csv():
     ]
     
     for word in garbage_words:
-        for _ in range(10): # Significant weight
+        for _ in range(10):
             data.append([word, "Other"])
 
     random.shuffle(data)

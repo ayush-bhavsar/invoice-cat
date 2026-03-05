@@ -8,7 +8,6 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 def main():
-    # Load dataset
     print("Loading data...")
     try:
         data = pd.read_csv('training_data/categories.csv')
@@ -16,7 +15,6 @@ def main():
         print("Error: Could not find training_data/categories.csv")
         return
 
-    # Use 'description' or 'item_text' depending on current CSV format
     if 'item_text' in data.columns:
         X_raw = data['item_text']
     elif 'description' in data.columns:
@@ -28,18 +26,15 @@ def main():
     y_raw = data['category']
 
     print("Applying TF-IDF vectorization...")
-    # TF-IDF Vectorization
     vectorizer = TfidfVectorizer(max_features=5000, stop_words='english', ngram_range=(1, 2))
     X = vectorizer.fit_transform(X_raw).toarray()
 
     print("Encoding categories...")
-    # Label Encoding
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y_raw)
     
     num_classes = len(label_encoder.classes_)
 
-    # Build Neural Network
     print("Building Feedforward Neural Network...")
     model = Sequential([
         Dense(256, activation='relu', input_shape=(X.shape[1],)),
@@ -56,7 +51,6 @@ def main():
     print("Training Model...")
     model.fit(X, y, epochs=15, batch_size=32, validation_split=0.2)
 
-    # Save models & preprocessors
     print("Saving models to disk...")
     model.save('nn_model.keras')
     joblib.dump(vectorizer, 'vectorizer.pkl')
