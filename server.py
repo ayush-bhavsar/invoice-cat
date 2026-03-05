@@ -56,9 +56,12 @@ def upload_file():
         
         print(f"Processing {filename}...")
 
+        # Get API key from request header (sent by browser settings modal)
+        user_api_key = request.headers.get('X-API-Key')
+
         # 1. OCR Extraction
         try:
-            raw_data_list = extract_invoice_data(save_path)
+            raw_data_list = extract_invoice_data(save_path, api_key=user_api_key)
         except Exception as e:
             print(f"OCR Error: {e}")
             return jsonify({'error': f"OCR Error: {str(e)}"}), 500
@@ -82,7 +85,7 @@ def upload_file():
                 # Standard classification via local NN or Gemini classifier
                 votes = []
                 if raw_data.get('product_descriptions'):
-                    cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method)
+                    cats = predict_categories_batch(raw_data['product_descriptions'], method=classification_method, api_key=user_api_key)
                     for cat in cats:
                         if cat != "Other":
                             votes.append(cat)

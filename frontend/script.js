@@ -181,9 +181,16 @@ async function processSingleFile(file, batchId) {
     const classificationMethod = toggleElement && toggleElement.checked ? 'gemini' : 'local_nn';
 
     // Add query param save=true, batch_id, AND classification method
+    const headers = {};
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) {
+        headers['X-API-Key'] = savedApiKey;
+    }
+
     const response = await fetch(`http://127.0.0.1:5000/upload?save=true&batch_id=${batchId}&method=${classificationMethod}`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: headers
     });
 
     // We don't need to show every single result card for batch upload,
@@ -240,3 +247,95 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.scroll-reveal').forEach(el => {
     observer.observe(el);
 });
+
+// ===================================================================
+// SETTINGS MODAL LOGIC
+// ===================================================================
+(function initSettings() {
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsOverlay = document.getElementById('settings-overlay');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveBtn = document.getElementById('save-api-key-btn');
+    const apiStatus = document.getElementById('api-status');
+    const settingsDot = document.getElementById('settings-dot');
+
+    if (!settingsBtn || !settingsModal) return;
+
+    // --- Open / Close ---
+    function openSettings() {
+        settingsModal.classList.add('visible');
+        settingsOverlay.classList.add('visible');
+        // Show masked key if stored
+        const stored = localStorage.getItem('gemini_api_key');
+        if (stored) {
+            apiKeyInput.value = stored;
+        }
+        setTimeout(() => apiKeyInput.focus(), 300);
+    }
+
+    function closeSettings() {
+        settingsModal.classList.remove('visible');
+        settingsOverlay.classList.remove('visible');
+    }
+
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSettings();
+    });
+
+    settingsOverlay.addEventListener('click', closeSettings);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSettings();
+    });
+
+    // Prevent modal click from closing
+    settingsModal.addEventListener('click', (e) => e.stopPropagation());
+
+    // --- Save Key ---
+    function saveApiKey() {
+        const key = apiKeyInput.value.trim();
+        if (!key) return;
+
+        localStorage.setItem('gemini_api_key', key);
+        updateStatus(true);
+
+        // Brief success flash
+        saveBtn.textContent = '✓ Saved';
+        saveBtn.style.background = 'linear-gradient(135deg, #34d399, #059669)';
+        setTimeout(() => {
+            saveBtn.textContent = 'Save';
+            saveBtn.style.background = '';
+        }, 1500);
+    }
+
+    saveBtn.addEventListener('click', saveApiKey);
+    apiKeyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveApiKey();
+    });
+
+    // --- Update Status ---
+    function updateStatus(hasKey) {
+        if (hasKey) {
+            apiStatus.className = 'api-status configured';
+            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-check"></i> API Key Configured</span><button class="btn-clear-key" id="clear-api-key-btn"><i class="fa-solid fa-trash-can"></i> Clear</button>';
+            settingsDot.className = 'status-dot active';
+
+            // Attach clear handler
+            document.getElementById('clear-api-key-btn').addEventListener('click', () => {
+                localStorage.removeItem('gemini_api_key');
+                apiKeyInput.value = '';
+                updateStatus(false);
+            });
+        } else {
+            apiStatus.className = 'api-status not-configured';
+            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>';
+            settingsDot.className = 'status-dot inactive';
+        }
+    }
+
+    // --- Init state on page load ---
+    const existingKey = localStorage.getItem('gemini_api_key');
+    updateStatus(!!existingKey);
+})();

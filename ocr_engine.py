@@ -203,15 +203,18 @@ def _extraction_quality(data):
 # =========================================================================
 # GEMINI FALLBACK — EXTRACTION + CLASSIFICATION IN ONE CALL
 # =========================================================================
-def _extract_with_gemini(ocr_text):
+def _extract_with_gemini(ocr_text, api_key=None):
     """
     Single Gemini API call that extracts all invoice fields AND classifies.
     Returns a data dict with 'category' key, or None on failure.
     """
-    if not GEMINI_API_KEY or not ocr_text or len(ocr_text.strip()) < 20:
+    effective_key = api_key or GEMINI_API_KEY
+    if not effective_key or not ocr_text or len(ocr_text.strip()) < 20:
         return None
 
     try:
+        # Configure with the effective key (per-request or .env fallback)
+        genai.configure(api_key=effective_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         prompt = f"""You are an expert invoice processing AI.
@@ -281,7 +284,7 @@ Rules:
 # =========================================================================
 # MAIN EXTRACTION ENTRY POINT
 # =========================================================================
-def extract_invoice_data(file_path):
+def extract_invoice_data(file_path, api_key=None):
     print(f"   Scanning: {file_path}...")
 
     try:
@@ -307,7 +310,7 @@ def extract_invoice_data(file_path):
                 # Too many missing fields — try Gemini fallback
                 print(f"   Low quality score — trying Gemini fallback...")
                 raw_text = page_data.get('_raw_ocr_text', '')
-                gemini_result = _extract_with_gemini(raw_text)
+                gemini_result = _extract_with_gemini(raw_text, api_key=api_key)
                 if gemini_result:
                     page_data = gemini_result
 

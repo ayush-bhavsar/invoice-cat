@@ -38,15 +38,17 @@ def load_resources():
 # Load at startup
 load_resources()
 
-def predict_gemini_batch(product_names):
-    if not GEMINI_API_KEY:
-        print("Error: LLM_API_KEY not found in environment.")
+def predict_gemini_batch(product_names, api_key=None):
+    effective_key = api_key or GEMINI_API_KEY
+    if not effective_key:
+        print("Error: No Gemini API key available (neither from browser nor .env).")
         return None
         
     if not product_names:
         return []
         
     try:
+        genai.configure(api_key=effective_key)
         model = genai.GenerativeModel('gemini-2.5-flash') # Using fast model for categorization
         
         # We need to give it the list of exact categories you expect
@@ -117,7 +119,7 @@ def predict_gemini_batch(product_names):
         print(f"Gemini API Error during batch processing: {e}")
         return None
 
-def predict_categories_batch(product_names, method='local_nn'):
+def predict_categories_batch(product_names, method='local_nn', api_key=None):
     """
     Predict the categories of a list of line items using either the trained local NN or Gemini LLM.
     Returns a list of predicted category strings.
@@ -127,7 +129,7 @@ def predict_categories_batch(product_names, method='local_nn'):
         
     if method == 'gemini':
         print(f"Using Gemini to categorize {len(product_names)} items in batch.")
-        result = predict_gemini_batch(product_names)
+        result = predict_gemini_batch(product_names, api_key=api_key)
         if result is not None:
             return result
         print("Gemini failed or rate-limited. Seamlessly falling back to local_nn...")
@@ -146,9 +148,9 @@ def predict_categories_batch(product_names, method='local_nn'):
         print(f"Batch prediction error: {e}")
         return ["Unknown"] * len(product_names)
 
-def predict_category(product_name, method='local_nn'):
+def predict_category(product_name, method='local_nn', api_key=None):
     """
     Predict the category of a line item using either the trained local NN or Gemini LLM.
     Returns the predicted category as a string.
     """
-    return predict_categories_batch([product_name], method)[0]
+    return predict_categories_batch([product_name], method, api_key=api_key)[0]
