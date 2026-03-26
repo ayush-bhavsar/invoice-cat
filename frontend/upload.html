@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Invoice - Smart Invoice Extractor</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-grid"></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> InvoiceAI
+            </a>
+        </div>
+        <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+            <div class="method-toggle"
+                style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
+                <span style="font-size: 0.9rem;">Local NN Model</span>
+                <label class="switch" style="position: relative; display: inline-block; width: 40px; height: 20px;">
+                    <input type="checkbox" id="classification-method-toggle" style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider round"
+                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px;"></span>
+                </label>
+                <span style="font-size: 0.9rem;">LLM</span>
+            </div>
+            <a href="/">Home</a>
+            <a href="/how-it-works">How it Works</a>
+            <a href="/analytics">Analytics</a>
+            <button class="settings-btn" id="settings-btn" title="Settings">
+                <i class="fa-solid fa-gear"></i>
+                <span class="status-dot inactive" id="settings-dot"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-modal" id="settings-modal">
+        <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
+        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
+            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+                style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
+        <div class="api-input-group">
+            <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
+            <button class="btn-save-key" id="save-api-key-btn">Save</button>
+        </div>
+        <div class="api-status not-configured" id="api-status">
+            <span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>
+        </div>
+        <div class="settings-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Your key is stored locally in your browser and never saved on the server. It is only sent with API
+                requests as a secure header.</span>
+        </div>
+    </div>
+
+    <style>
+        .switch input:checked+.slider {
+            background-color: var(--primary);
+        }
+
+        .switch input:focus+.slider {
+            box-shadow: 0 0 1px var(--primary);
+        }
+
+        .switch input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+    </style>
+
+    <section id="upload" class="upload-section">
+        <div class="container">
+            <h2 class="section-title">Drop your file here</h2>
+            <p class="section-subtitle">Supports PNG, JPG, JPEG, PDF</p>
+
+            <div class="glass-card upload-card" id="drop-zone">
+                <div class="upload-icon">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                </div>
+                <p class="upload-text">Drag & Drop invoices or <span class="browse-link">Browse</span></p>
+                <input type="file" id="file-input" hidden accept=".png, .jpg, .jpeg, .pdf, .tiff, .tif" multiple>
+                <div id="loader" class="loader hidden"></div>
+
+                <div id="batch-progress" class="batch-progress hidden">
+                    <p id="progress-text">Processed 0 / 0</p>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="queue-ui" class="hidden" style="text-align: center; margin-top: 20px;">
+                <p id="queue-text" style="font-weight: 600; margin-bottom: 15px; color: var(--text);">0 files selected
+                    ready for processing.</p>
+                <button class="btn-primary" id="start-process-btn"><i class="fa-solid fa-play"></i> Start
+                    Processing</button>
+                <button class="btn-secondary" id="clear-queue-btn" style="margin-left: 10px;"><i
+                        class="fa-solid fa-xmark"></i> Clear</button>
+            </div>
+
+            <div id="global-actions" class="hidden" style="text-align: center; margin-top: 20px;">
+                <button class="btn-primary" id="download-report-btn"><i class="fa-solid fa-file-csv"></i> Download Final
+                    Report</button>
+                <button class="btn-primary" id="analyse-results-btn"
+                    style="margin-left: 10px; background: linear-gradient(135deg, #8b5cf6, #f472b6);"><i
+                        class="fa-solid fa-chart-pie"></i> Analyse
+                    Results</button>
+                <button class="btn-secondary" id="process-more-btn"><i class="fa-solid fa-rotate-right"></i> Process New
+                    Batch</button>
+            </div>
+
+            <div id="result-container" class="result-container hidden fade-in">
+                <div class="glass-card result-card">
+                    <div class="result-header">
+                        <h3><i class="fa-solid fa-check-circle"></i> Extraction Complete</h3>
+                        <span id="file-name-display" class="badge">invoice.jpg</span>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span class="label">Date</span>
+                            <span class="value" id="res-date">--</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Total Amount</span>
+                            <span class="value price" id="res-amount">--</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Category</span>
+                            <span class="value type" id="res-category">--</span>
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <button class="btn-primary" id="download-btn"><i class="fa-solid fa-download"></i> Download
+                            Report</button>
+                        <button class="btn-secondary" id="reset-btn">Upload Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

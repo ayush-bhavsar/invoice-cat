@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Invoice-IQ</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="background-grid"></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Invoice-IQ
+            </a>
+        </div>
+        <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+            <a href="/">Home</a>
+            <a href="/upload-page">Upload</a>
+            <a href="/how-it-works">How it Works</a>
+            <a href="/analytics" class="active-link">Analytics</a>
+            <button class="settings-btn" id="settings-btn" title="Settings">
+                <i class="fa-solid fa-gear"></i>
+                <span class="status-dot inactive" id="settings-dot"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-modal" id="settings-modal">
+        <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
+        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
+            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+                style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
+        <div class="api-input-group">
+            <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
+            <button class="btn-save-key" id="save-api-key-btn">Save</button>
+        </div>
+        <div class="api-status not-configured" id="api-status">
+            <span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>
+        </div>
+        <div class="settings-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Your key is stored locally in your browser and never saved on the server. It is only sent with API
+                requests as a secure header.</span>
+        </div>
+    </div>
+
+    <main class="analytics-main">
+        <div class="container">
+
+            <div class="analytics-header fade-in-up">
+                <div class="header-left">
+                    <h1><i class="fa-solid fa-chart-line"></i> Analytics <span class="gradient-text">Dashboard</span>
+                    </h1>
+                    <p class="section-subtitle" style="text-align: left; margin-bottom: 0;">
+                        Deep insights from your invoice data
+                    </p>
+                </div>
+                <div class="header-actions">
+                    <select id="batch-selector" class="glass-select">
+                        <option value="main">Full Report (All Invoices)</option>
+                    </select>
+                    <button id="export-pdf-btn" class="btn-secondary" style="margin-left: 10px;" title="Export as PDF">
+                        <i class="fa-solid fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button id="header-upload-csv-btn" class="btn-secondary" style="margin-left: 8px;"
+                        title="Upload CSV for Analysis">
+                        <i class="fa-solid fa-file-arrow-up"></i> Upload CSV
+                    </button>
+                    <input type="file" id="header-csv-file-input" hidden accept=".csv">
+                </div>
+            </div>
+
+            <div id="csv-upload-zone" class="glass-card csv-upload-card fade-in-up hidden">
+                <div class="csv-upload-inner" id="csv-drop-zone">
+                    <i class="fa-solid fa-file-csv csv-upload-icon"></i>
+                    <h3>Upload CSV for Analysis</h3>
+                    <p class="text-muted">Drag & drop a CSV file or <span class="browse-link"
+                            id="csv-browse-link">Browse</span></p>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: 5px;">
+                        Expected columns: Invoice No, Date, Seller Name, Client Name, Seller Tax ID, Seller IBAN, Client
+                        Tax ID, Total Amount, Category
+                    </p>
+                    <input type="file" id="csv-file-input" hidden accept=".csv">
+                </div>
+            </div>
+
+            <div id="analytics-loader" class="analytics-loader hidden">
+                <div class="loader"></div>
+                <p>Crunching the numbers...</p>
+            </div>
+
+            <div id="dashboard-content" class="hidden">
+
+                <div class="kpi-grid fade-in-up">
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--primary-cyan);">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Invoices</span>
+                            <span class="kpi-value" id="kpi-total-invoices">--</span>
+                        </div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(52, 211, 153, 0.15); color: #34d399;">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Spend</span>
+                            <span class="kpi-value price" id="kpi-total-spend">--</span>
+                        </div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Avg Invoice</span>
+                            <span class="kpi-value" id="kpi-avg-invoice">--</span>
+                        </div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(244, 114, 182, 0.15); color: #f472b6;">
+                            <i class="fa-solid fa-arrow-up-right-dots"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Highest Invoice</span>
+                            <span class="kpi-value" id="kpi-max-invoice">--</span>
+                        </div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Unique Sellers</span>
+                            <span class="kpi-value" id="kpi-unique-sellers">--</span>
+                        </div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-icon" style="background: rgba(96, 165, 250, 0.15); color: #60a5fa;">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Unique Clients</span>
+                            <span class="kpi-value" id="kpi-unique-clients">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid-2 fade-in-up">
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-chart-pie"></i> Category Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-category-distribution"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-chart-bar"></i> Spending by Category</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-category-spend"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid-1 fade-in-up">
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-chart-line"></i> Monthly Spending Trend</h3>
+                        <div class="chart-container chart-container-wide">
+                            <canvas id="chart-monthly-spend"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid-2 fade-in-up">
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-layer-group"></i> Category Trend Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-category-trend"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-signal"></i> Invoice Amount Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-amount-distribution"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="charts-grid-2 fade-in-up">
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-globe"></i> IBAN Country Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-iban-countries"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-shield-halved"></i> Data Completeness</h3>
+                        <div class="compliance-grid" id="compliance-grid">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="outliers-section" class="fade-in-up hidden">
+                    <div class="glass-card chart-card">
+                        <h3 class="chart-title"><i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i>
+                            Anomaly Detection — Outlier Invoices</h3>
+                        <div class="outlier-list" id="outlier-list">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fade-in-up">
+                    <div class="glass-card chart-card">
+                        <div class="table-header">
+                            <h3 class="chart-title" style="margin-bottom: 0;"><i class="fa-solid fa-table"></i> Invoice
+                                Data</h3>
+                            <div class="table-controls">
+                                <input type="text" id="table-search" class="glass-input"
+                                    placeholder="Search invoices...">
+                                <select id="table-category-filter" class="glass-select">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="data-table" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th data-sort="invoice_no">Invoice No <i class="fa-solid fa-sort"></i></th>
+                                        <th data-sort="date">Date <i class="fa-solid fa-sort"></i></th>
+                                        <th data-sort="seller_name">Seller <i class="fa-solid fa-sort"></i></th>
+                                        <th data-sort="client_name">Client <i class="fa-solid fa-sort"></i></th>
+                                        <th data-sort="total_amount">Amount <i class="fa-solid fa-sort"></i></th>
+                                        <th data-sort="category">Category <i class="fa-solid fa-sort"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Smart Invoice-IQ. Built with lots of ❤️ and ☕</p>
+    </footer>
+
+    <script src="analytics.js"></script>
+</body>
+
+</html>

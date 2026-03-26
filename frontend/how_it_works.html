@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How it Works - Smart Invoice Extractor</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-grid"></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <a href="/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Invoice-IQ
+            </a>
+        </div>
+        <div class="nav-links" style="display: flex; align-items: center; gap: 20px;">
+            <a href="/">Home</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/upload-page" class="btn-primary">Get Started</a>
+            <button class="settings-btn" id="settings-btn" title="Settings">
+                <i class="fa-solid fa-gear"></i>
+                <span class="status-dot inactive" id="settings-dot"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-modal" id="settings-modal">
+        <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
+        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
+            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+                style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
+        <div class="api-input-group">
+            <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
+            <button class="btn-save-key" id="save-api-key-btn">Save</button>
+        </div>
+        <div class="api-status not-configured" id="api-status">
+            <span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>
+        </div>
+        <div class="settings-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Your key is stored locally in your browser and never saved on the server. It is only sent with API
+                requests as a secure header.</span>
+        </div>
+    </div>
+
+    <section class="hero" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div class="container">
+            <h1 class="fade-in-up">How it <span class="gradient-text">Works</span></h1>
+            <p class="fade-in-up delay-1" style="max-width: 600px; margin: 0 auto 40px;">
+                Simplifying your invoice processing in three easy steps.
+            </p>
+
+            <div class="glass-card fade-in-up delay-2" style="text-align: left; max-width: 800px; margin: 0 auto;">
+                <div style="display: flex; gap: 30px; flex-direction: column;">
+
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div
+                            style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                            1</div>
+                        <div>
+                            <h3 style="margin: 0 0 10px; color: var(--text-dark);">Upload Your Invoice</h3>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Drag and drop your invoice image (PNG, JPG) into the upload zone. We support single and
+                                batch uploads.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div
+                            style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                            2</div>
+                        <div>
+                            <h3 style="margin: 0 0 10px; color: var(--text-dark);">AI Extraction</h3>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Our advanced AI engine analyzes the visual structure of your document to identify dates,
+                                totals, and categories automatically.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div
+                            style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                            3</div>
+                        <div>
+                            <h3 style="margin: 0 0 10px; color: var(--text-dark);">Verify & Download</h3>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Review the extracted data instantly on the screen. Download the consolidated report as a
+                                CSV file for your records.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <a href="/upload-page" class="btn-primary-lg">Start Now <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
+    </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+flask
+flask-cors
+pandas
+pytesseract
+Pillow
+scikit-learn
+PyMuPDF
+tensorflow
+joblib
+google-generativeai
+python-dotenv
