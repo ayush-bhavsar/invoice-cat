@@ -15,6 +15,30 @@
     let mouseY = -1000;
 
     // Configuration
+    const DARK_COLORS = [
+        'rgba(6, 182, 212,',    // cyan
+        'rgba(139, 92, 246,',   // violet
+        'rgba(244, 114, 182,',  // pink
+        'rgba(56, 189, 248,',   // light blue
+    ];
+
+    const LIGHT_COLORS = [
+        'rgba(8, 145, 178,',    // darker cyan
+        'rgba(109, 40, 217,',   // darker violet
+        'rgba(190, 24, 93,',    // darker pink
+        'rgba(14, 116, 144,',   // teal
+    ];
+
+    function getColors() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        return theme === 'light' ? LIGHT_COLORS : DARK_COLORS;
+    }
+
+    function getConnectionColor() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        return theme === 'light' ? '8, 145, 178' : '6, 182, 212';
+    }
+
     const CONFIG = {
         particleCount: 60,
         maxSpeed: 0.3,
@@ -22,12 +46,6 @@
         particleMaxSize: 2.5,
         connectionDistance: 150,
         mouseRadius: 200,
-        colors: [
-            'rgba(6, 182, 212,',    // cyan
-            'rgba(139, 92, 246,',   // violet
-            'rgba(244, 114, 182,',  // pink
-            'rgba(56, 189, 248,',   // light blue
-        ]
     };
 
     function resize() {
@@ -36,7 +54,10 @@
     }
 
     function createParticle() {
-        const color = CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)];
+        const colors = getColors();
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const theme = document.documentElement.getAttribute('data-theme');
+        const baseOp = theme === 'light' ? (0.15 + Math.random() * 0.25) : (0.2 + Math.random() * 0.4);
         return {
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -44,7 +65,7 @@
             vy: (Math.random() - 0.5) * CONFIG.maxSpeed * 2,
             size: CONFIG.particleMinSize + Math.random() * (CONFIG.particleMaxSize - CONFIG.particleMinSize),
             color: color,
-            baseOpacity: 0.2 + Math.random() * 0.4,
+            baseOpacity: baseOp,
             pulseSpeed: 0.005 + Math.random() * 0.01,
             pulseOffset: Math.random() * Math.PI * 2,
         };
@@ -89,7 +110,7 @@
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = `rgba(6, 182, 212, ${opacity})`;
+                    ctx.strokeStyle = `rgba(${getConnectionColor()}, ${opacity})`;
                     ctx.lineWidth = 0.5;
                     ctx.stroke();
                 }
@@ -168,6 +189,16 @@
             cancelAnimationFrame(animationId);
         } else {
             animationId = requestAnimationFrame(animate);
+        }
+    });
+
+    // Listen for theme changes
+    window.addEventListener('themechange', () => {
+        const colors = getColors();
+        const theme = document.documentElement.getAttribute('data-theme');
+        for (const p of particles) {
+            p.color = colors[Math.floor(Math.random() * colors.length)];
+            p.baseOpacity = theme === 'light' ? (0.15 + Math.random() * 0.25) : (0.2 + Math.random() * 0.4);
         }
     });
 

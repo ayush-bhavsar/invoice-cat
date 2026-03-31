@@ -40,6 +40,10 @@
             <a href="/">Home</a>
             <a href="/how-it-works">How it Works</a>
             <a href="/analytics">Analytics</a>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">
+                <i class="fa-solid fa-moon icon-moon"></i>
+                <i class="fa-solid fa-sun icon-sun"></i>
+            </button>
             <button class="settings-btn" id="settings-btn" title="Settings">
                 <i class="fa-solid fa-gear"></i>
                 <span class="status-dot inactive" id="settings-dot"></span>
@@ -51,8 +55,8 @@
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
         <p class="settings-desc">Paste your Gemini API key to let the AI cook. 🧑‍🍳
-            Get one at <a href="https://aistudio.google.com/" target="_blank"
-                style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
+            Get one at <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary-cyan);">Google
+                AI Studio</a>.</p>
         <div class="api-input-group">
             <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
             <button class="btn-save-key" id="save-api-key-btn">Save</button>
