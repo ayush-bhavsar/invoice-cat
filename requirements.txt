@@ -1,6 +1,8 @@
 flask
 flask-cors
+werkzeug
 pandas
+numpy
 pytesseract
 Pillow
 scikit-learn

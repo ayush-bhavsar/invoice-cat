@@ -1,9 +1,23 @@
 import os
 import json
+import sys
+import shutil
 import pytesseract
 from pytesseract import Output
 from PIL import Image
 import re
+
+# Auto-detect Tesseract on Windows if not already in PATH
+if sys.platform == 'win32' and not shutil.which('tesseract'):
+    _tesseract_paths = [
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+        os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Tesseract-OCR', 'tesseract.exe'),
+    ]
+    for _path in _tesseract_paths:
+        if os.path.exists(_path):
+            pytesseract.pytesseract.tesseract_cmd = _path
+            break
 
 from dotenv import load_dotenv
 import google.generativeai as genai
