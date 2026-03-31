@@ -57,7 +57,7 @@ function queueFiles(files) {
     queueUi.classList.remove('hidden');
 
     const count = queuedFiles.length;
-    queueText.innerHTML = `<span style="color: var(--primary); font-size: 1.2rem;">${count}</span> invoice${count > 1 ? 's' : ''} selected and ready for processing.`;
+    queueText.innerHTML = `<span style="color: var(--primary); font-size: 1.2rem;">${count}</span> invoice${count > 1 ? 's' : ''} locked and loaded. Let's go. 🔥`;
 
     document.getElementById('global-actions').classList.add('hidden');
 }
@@ -280,7 +280,7 @@ document.querySelectorAll('.scroll-reveal').forEach(el => {
     function updateStatus(hasKey) {
         if (hasKey) {
             apiStatus.className = 'api-status configured';
-            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-check"></i> API Key Configured</span><button class="btn-clear-key" id="clear-api-key-btn"><i class="fa-solid fa-trash-can"></i> Clear</button>';
+            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-check"></i> API Key Locked In. Beast Mode ON. 🔥</span><button class="btn-clear-key" id="clear-api-key-btn"><i class="fa-solid fa-trash-can"></i> Clear</button>';
             settingsDot.className = 'status-dot active';
 
             document.getElementById('clear-api-key-btn').addEventListener('click', () => {
@@ -290,7 +290,7 @@ document.querySelectorAll('.scroll-reveal').forEach(el => {
             });
         } else {
             apiStatus.className = 'api-status not-configured';
-            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>';
+            apiStatus.innerHTML = '<span><i class="fa-solid fa-circle-xmark"></i> No API Key. The AI is starving. 😢</span>';
             settingsDot.className = 'status-dot inactive';
         }
     }

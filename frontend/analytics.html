@@ -15,7 +15,14 @@
 </head>
 
 <body>
+    <!-- Animated Background -->
     <div class="background-grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    <canvas id="particles-canvas"></canvas>
 
     <nav class="navbar">
         <div class="logo">
@@ -38,8 +45,8 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
-        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
-            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+        <p class="settings-desc">Paste your Gemini API key to let the AI cook. 🧑‍🍳
+            Get one at <a href="https://aistudio.google.com/" target="_blank"
                 style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
         <div class="api-input-group">
             <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
@@ -260,9 +267,10 @@
     </main>
 
     <footer>
-        <p>&copy; 2026 Smart Invoice-IQ. Built with lots of ❤️ and ☕</p>
+        <p>&copy; If these analytics scare you, imagine doing it by hand.</p>
     </footer>
 
+    <script src="particles.js"></script>
     <script src="analytics.js"></script>
 </body>
 

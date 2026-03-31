@@ -13,8 +13,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-dark) 40%, var(--bg-darker) 100%);
-    background-color: var(--bg-dark);
+    background: var(--bg-darker);
     color: var(--text-main);
     margin: 0;
     padding: 0;
@@ -23,6 +22,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    position: relative;
 }
 
 .container {
@@ -44,19 +44,156 @@ body {
     display: none !important;
 }
 
+/* ============================================
+   ANIMATED BACKGROUND SYSTEM
+   ============================================ */
+
 .background-grid {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1;
+    z-index: -3;
     background-image:
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 50px 50px;
     mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
     pointer-events: none;
+    animation: gridPulse 8s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+/* Floating gradient orbs */
+.blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: -2;
+    will-change: transform;
+}
+
+.blob-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--primary-cyan), transparent 70%);
+    top: -100px;
+    left: -100px;
+    animation: blobDrift1 20s ease-in-out infinite;
+}
+
+.blob-2 {
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, var(--primary-violet), transparent 70%);
+    bottom: -80px;
+    right: -80px;
+    animation: blobDrift2 25s ease-in-out infinite;
+}
+
+.blob-3 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, #f472b6, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: blobDrift3 18s ease-in-out infinite;
+    opacity: 0.12;
+}
+
+@keyframes blobDrift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(120px, 80px) scale(1.1); }
+    50% { transform: translate(50px, 200px) scale(0.9); }
+    75% { transform: translate(-60px, 100px) scale(1.05); }
+}
+
+@keyframes blobDrift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-100px, -60px) scale(1.15); }
+    50% { transform: translate(-180px, -120px) scale(0.85); }
+    75% { transform: translate(-50px, -180px) scale(1.1); }
+}
+
+@keyframes blobDrift3 {
+    0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    33% { transform: translate(-30%, -60%) scale(1.2) rotate(120deg); }
+    66% { transform: translate(-70%, -40%) scale(0.8) rotate(240deg); }
+}
+
+/* Animated scan line (tech feel) */
+.background-grid::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary-cyan), var(--primary-violet), transparent);
+    opacity: 0.15;
+    animation: scanLine 8s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanLine {
+    0% { top: -2px; }
+    100% { top: 100vh; }
+}
+
+/* Floating particles canvas */
+#particles-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Ambient glow spots that breathe */
+.ambient-glow {
+    position: fixed;
+    pointer-events: none;
+    z-index: -2;
+    border-radius: 50%;
+    filter: blur(100px);
+}
+
+.ambient-glow-1 {
+    width: 300px;
+    height: 300px;
+    background: rgba(6, 182, 212, 0.08);
+    top: 20%;
+    right: 10%;
+    animation: ambientPulse1 12s ease-in-out infinite;
+}
+
+.ambient-glow-2 {
+    width: 250px;
+    height: 250px;
+    background: rgba(139, 92, 246, 0.08);
+    bottom: 30%;
+    left: 5%;
+    animation: ambientPulse2 15s ease-in-out infinite;
+}
+
+@keyframes ambientPulse1 {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes ambientPulse2 {
+    0%, 100% { opacity: 0.5; transform: scale(1.1); }
+    50% { opacity: 0.2; transform: scale(0.8); }
 }
 
 .navbar {
@@ -237,7 +374,7 @@ body {
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 30px;
 }
 

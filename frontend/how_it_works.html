@@ -11,7 +11,14 @@
 </head>
 
 <body>
+    <!-- Animated Background -->
     <div class="background-grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    <canvas id="particles-canvas"></canvas>
 
     <nav class="navbar">
         <div class="logo">
@@ -33,28 +40,27 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
-        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
-            Get one free at <a href="https://aistudio.google.com/" target="_blank"
-                style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
+        <p class="settings-desc">Paste your Gemini API key to let the AI cook🧑‍🍳.
+            Get one at <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary-cyan);">Google
+                AI Studio</a>.</p>
         <div class="api-input-group">
             <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
             <button class="btn-save-key" id="save-api-key-btn">Save</button>
         </div>
         <div class="api-status not-configured" id="api-status">
-            <span><i class="fa-solid fa-circle-xmark"></i> No API Key configured</span>
+            <span><i class="fa-solid fa-circle-xmark"></i> No API Key. The AI is starving. 😢</span>
         </div>
         <div class="settings-note">
             <i class="fa-solid fa-shield-halved"></i>
-            <span>Your key is stored locally in your browser and never saved on the server. It is only sent with API
-                requests as a secure header.</span>
+            <span>Stored locally. Never on our server. We pinky promise. 🤙</span>
         </div>
     </div>
 
     <section class="hero" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
         <div class="container">
-            <h1 class="fade-in-up">How it <span class="gradient-text">Works</span></h1>
+            <h1 class="fade-in-up">How The <span class="gradient-text">Magic</span> Happens</h1>
             <p class="fade-in-up delay-1" style="max-width: 600px; margin: 0 auto 40px;">
-                Simplifying your invoice processing in three easy steps.
+                4 Steps. No Brain Cells Required.
             </p>
 
             <div class="glass-card fade-in-up delay-2" style="text-align: left; max-width: 800px; margin: 0 auto;">
@@ -67,8 +73,7 @@
                         <div>
                             <h3 style="margin: 0 0 10px; color: var(--text-dark);">Upload Your Invoice</h3>
                             <p style="color: var(--text-light); margin: 0;">
-                                Drag and drop your invoice image (PNG, JPG) into the upload zone. We support single and
-                                batch uploads.
+                                Just drag your invoice(JPG, PNG, PDF) in. Even a toddler could do this. We tested.
                             </p>
                         </div>
                     </div>
@@ -80,8 +85,8 @@
                         <div>
                             <h3 style="margin: 0 0 10px; color: var(--text-dark);">AI Extraction</h3>
                             <p style="color: var(--text-light); margin: 0;">
-                                Our advanced AI engine analyzes the visual structure of your document to identify dates,
-                                totals, and categories automatically.
+                                Neural networks go brrr. Dates, amounts, categories..... extracted before you finish
+                                reading this.
                             </p>
                         </div>
                     </div>
@@ -93,8 +98,20 @@
                         <div>
                             <h3 style="margin: 0 0 10px; color: var(--text-dark);">Verify & Download</h3>
                             <p style="color: var(--text-light); margin: 0;">
-                                Review the extracted data instantly on the screen. Download the consolidated report as a
-                                CSV file for your records.
+                                Preview your data. Download the CSV. Go brag about it.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div
+                            style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+                            4</div>
+                        <div>
+                            <h3 style="margin: 0 0 10px; color: var(--text-dark);">Analyse Your Data</h3>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Beautiful charts, category breakdowns, and anomaly detection. Your data has never looked
+                                this good.
                             </p>
                         </div>
                     </div>
@@ -109,9 +126,11 @@
     </section>
 
     <footer>
-        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
+        <p>&copy;Powered by ctrl+c and ctrl+v</p>
     </footer>
 
+    <script src="particles.js"></script>
+    <script src="script.js"></script>
 </body>
 
 </html>

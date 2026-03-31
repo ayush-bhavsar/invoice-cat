@@ -11,7 +11,14 @@
 </head>
 
 <body>
+    <!-- Animated Background -->
     <div class="background-grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    <canvas id="particles-canvas"></canvas>
 
     <nav class="navbar">
         <div class="logo">
@@ -43,8 +50,8 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
-        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
-            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+        <p class="settings-desc">Paste your Gemini API key to let the AI cook. 🧑‍🍳
+            Get one at <a href="https://aistudio.google.com/" target="_blank"
                 style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
         <div class="api-input-group">
             <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
@@ -88,14 +95,14 @@
 
     <section id="upload" class="upload-section">
         <div class="container">
-            <h2 class="section-title">Drop your file here</h2>
+            <h2 class="section-title">Bhandara Karado</h2>
             <p class="section-subtitle">Supports PNG, JPG, JPEG, PDF</p>
 
             <div class="glass-card upload-card" id="drop-zone">
                 <div class="upload-icon">
                     <i class="fa-solid fa-file-arrow-up"></i>
                 </div>
-                <p class="upload-text">Drag & Drop invoices or <span class="browse-link">Browse</span></p>
+                <p class="upload-text">Throw your Invoices here.</span></p>
                 <input type="file" id="file-input" hidden accept=".png, .jpg, .jpeg, .pdf, .tiff, .tif" multiple>
                 <div id="loader" class="loader hidden"></div>
 
@@ -160,9 +167,10 @@
     </section>
 
     <footer>
-        <p>&copy; 2026 Smart Invoice AI. Built with lots of ❤️ and ☕</p>
+        <p>&copy; AI took your job. You're welcome. 🫡</p>
     </footer>
 
+    <script src="particles.js"></script>
     <script src="script.js"></script>
 </body>
 

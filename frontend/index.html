@@ -30,8 +30,8 @@
     <div class="settings-overlay" id="settings-overlay"></div>
     <div class="settings-modal" id="settings-modal">
         <h3><i class="fa-solid fa-key"></i> API Configuration</h3>
-        <p class="settings-desc">Enter your Google Gemini API key to enable AI-powered extraction and classification.
-            Get one free at <a href="https://aistudio.google.com/" target="_blank"
+        <p class="settings-desc">Paste your Gemini API key to let the AI cook. 🧑‍🍳
+            Get one at <a href="https://aistudio.google.com/" target="_blank"
                 style="color: var(--primary-cyan);">Google AI Studio</a>.</p>
         <div class="api-input-group">
             <input type="password" id="api-key-input" placeholder="Paste your Gemini API key..." autocomplete="off">
@@ -47,16 +47,20 @@
         </div>
     </div>
 
+    <!-- Animated Background -->
     <div class="background-grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="ambient-glow ambient-glow-1"></div>
+    <div class="ambient-glow ambient-glow-2"></div>
+    <canvas id="particles-canvas"></canvas>
 
     <section class="hero">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
 
         <div class="hero-content">
             <h1 class="fade-in-up">Automate Your <span class="gradient-text">Invoices</span></h1>
-            <p class="fade-in-up delay-1">Extract dates, amounts, and categories instantly with our AI-powered engine.
-                Stop manual data entry today.</p>
+            <p class="fade-in-up delay-1">Upload. Extract. Done. Your accountant can finally take a nap.</p>
             <div class="hero-buttons fade-in-up delay-2">
                 <a href="/upload-page" class="btn-primary-lg">Upload Invoice <i
                         class="fa-solid fa-cloud-arrow-up"></i></a>
@@ -68,13 +72,14 @@
     <section id="features" class="features-section">
         <div class="container">
             <h2 class="section-title">Why Choose Invoice-IQ?</h2>
+            <p class="section-subtitle">Still Doing It Manually? Seriously?</p>
             <div class="features-grid">
                 <div class="glass-card feature-card scroll-reveal">
                     <div class="feature-icon">
                         <i class="fa-solid fa-brain"></i>
                     </div>
                     <h3>Smart Extraction</h3>
-                    <p>Automatically identifies dates, amounts, and categories with high precision.</p>
+                    <p>Automatically identifies dates, amounts, and categories faster than you find excuses.</p>
                 </div>
 
                 <div class="glass-card feature-card scroll-reveal" style="transition-delay: 0.2s">
@@ -82,7 +87,7 @@
                         <i class="fa-solid fa-layer-group"></i>
                     </div>
                     <h3>Batch Processing</h3>
-                    <p>Upload multiple invoices at once and process them in seconds.</p>
+                    <p>Handles stacks of invoices like you handle stacks of excuses -effortlessly.</p>
                 </div>
 
                 <div class="glass-card feature-card scroll-reveal" style="transition-delay: 0.4s">
@@ -90,7 +95,15 @@
                         <i class="fa-solid fa-file-csv"></i>
                     </div>
                     <h3>Instant Export</h3>
-                    <p>Download detailed CSV reports compatible with Excel and Quickbooks.</p>
+                    <p>CSV so clean, Excel might propose it.</p>
+                </div>
+
+                <div class="glass-card feature-card scroll-reveal" style="transition-delay: 0.6s">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h3>Analytics Dashboard</h3>
+                    <p>Charts so pretty, your data will finally feel loved. 💕</p>
                 </div>
             </div>
         </div>
@@ -99,9 +112,10 @@
 
 
     <footer>
-        <p>&copy; 2026 Smart Invoice-IQ. Built with lots of ❤️ and ☕</p>
+        <p>&copy; This Model has more brain cells than our entire team combined.</p>
     </footer>
 
+    <script src="particles.js"></script>
     <script src="script.js"></script>
 </body>
 
