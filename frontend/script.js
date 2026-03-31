@@ -157,7 +157,7 @@ async function handleFiles(files) {
         progressText.innerText = `Processed ${processedCount} / ${total}`;
     }
 
-    uploadText.innerText = "Batch Complete!";
+    uploadText.innerText = "Fhaaaaa!";
     globalActions.classList.remove('hidden');
 
     downloadBtn.onclick = () => {
