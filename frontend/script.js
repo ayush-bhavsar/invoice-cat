@@ -143,7 +143,7 @@ async function handleFiles(files) {
     for (const file of files) {
         if (!['image/png', 'image/jpeg', 'image/jpg', 'image/tiff', 'application/pdf'].includes(file.type)) continue;
 
-        uploadText.innerText = `Processing: ${file.name}`;
+        uploadText.innerText = `Cooking: ${file.name}`;
 
         try {
             await processSingleFile(file, batchId);
@@ -154,7 +154,7 @@ async function handleFiles(files) {
         processedCount++;
         const percent = (processedCount / total) * 100;
         progressBar.style.width = percent + '%';
-        progressText.innerText = `Processed ${processedCount} / ${total}`;
+        progressText.innerText = `Cooked ${processedCount}/${total} 🔥`;
     }
 
     uploadText.innerText = "Fhaaaaa!";
