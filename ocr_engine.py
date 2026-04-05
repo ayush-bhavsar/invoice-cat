@@ -73,6 +73,7 @@ def _extract_from_image(img):
         "invoice_id": "Not Found",
         "date": "Not Found",
         "seller_name": "Not Found",
+        "seller_address": "Not Found",
         "client_name": "Not Found",
         "seller_tax_id": "Not Found",
         "client_tax_id": "Not Found",
@@ -174,6 +175,7 @@ def _extract_from_image(img):
     name_blacklist = ["date", "issue", "invoice", "no:", "number", "id", "tax", "iban", "page", "seller:", "client:", "to:", "from:"]
 
     seller_lines = []
+    seller_address_lines = []
     client_lines = []
 
     for i in range(n_boxes):
@@ -224,6 +226,7 @@ def _extract_from_image(img):
             if not is_blacklisted and not is_date:
                 if x < (width / 2):
                     if not re.search(r'\d', text): seller_lines.append(text)
+                    else: seller_address_lines.append(text)
                 else:
                     if not re.search(r'\d', text): client_lines.append(text)
 
@@ -235,6 +238,13 @@ def _extract_from_image(img):
 
     if seller_lines: data["seller_name"] = " ".join(seller_lines[:3]).replace("of ", "")
     if client_lines: data["client_name"] = " ".join(client_lines[:3])
+
+    # Build seller address from address lines collected in the seller region
+    if seller_address_lines:
+        data["seller_address"] = " ".join(seller_address_lines[:4])
+
+    # Set items count from product descriptions
+    data["items_count"] = len(data["product_descriptions"])
 
     all_text_pieces = [t for t in ocr_data['text'] if t.strip()]
     data["_raw_ocr_text"] = " ".join(all_text_pieces)
@@ -276,10 +286,12 @@ Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
   "invoice_id": "the invoice number or ID",
   "date": "the invoice date in dd/mm/yyyy format",
   "seller_name": "the seller/vendor company name (who is issuing the invoice)",
+  "seller_address": "the full address of the seller/vendor",
   "client_name": "the buyer/client name (who is being billed)",
   "seller_tax_id": "seller tax ID / GSTIN / PAN if present",
   "client_tax_id": "client tax ID / GSTIN if present",
   "seller_iban": "seller IBAN / bank account number if present",
+  "items_count": "the number of line items in the invoice as an integer",
   "total_amount": "the final total amount as a number like 123.45 (use grand total / balance due, not subtotal)",
   "total_net_worth": "the total net worth (before tax) as a number like 123.45, or 0.00 if not found",
   "total_vat": "the total VAT/tax amount as a number like 12.34, or 0.00 if not found",
@@ -293,6 +305,7 @@ Rules:
 - For missing fields, use "Not Found"
 - For total_amount, total_net_worth, total_vat, total_gross_worth use "0.00" if not found
 - For vat_percent use "N/A" if not found
+- For items_count use 0 if not found
 - seller_name = the company ISSUING the invoice (usually at the top)
 - client_name = the entity RECEIVING / being billed (labeled Bill To / Ship To / Client)
 - Prefer Invoice Date over Due Date
@@ -337,6 +350,15 @@ Rules:
         if not isinstance(result.get('product_descriptions'), list):
             result['product_descriptions'] = []
 
+        # Normalize items_count
+        try:
+            result['items_count'] = int(result.get('items_count', 0))
+        except (ValueError, TypeError):
+            result['items_count'] = len(result.get('product_descriptions', []))
+
+        if not result.get('seller_address'):
+            result['seller_address'] = 'Not Found'
+
         result['_extracted_by'] = 'gemini'
         print(f"   [OK] Gemini Vision extraction+classification succeeded")
         return result
@@ -371,10 +393,12 @@ Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
   "invoice_id": "the invoice number or ID",
   "date": "the invoice date in dd/mm/yyyy format",
   "seller_name": "the seller/vendor company name",
+  "seller_address": "the full address of the seller/vendor",
   "client_name": "the buyer/client name",
   "seller_tax_id": "seller tax ID if present",
   "client_tax_id": "client tax ID if present",
   "seller_iban": "seller IBAN if present",
+  "items_count": "the number of line items in the invoice as an integer",
   "total_amount": "total amount as a number like 123.45",
   "total_net_worth": "the total net worth (before tax) as a number like 123.45, or 0.00 if not found",
   "total_vat": "the total VAT/tax amount as a number like 12.34, or 0.00 if not found",
@@ -388,6 +412,7 @@ Rules:
 - For missing fields, use "Not Found"
 - For total_amount, total_net_worth, total_vat, total_gross_worth use "0.00" if not found
 - For vat_percent use "N/A" if not found
+- For items_count use 0 if not found
 - Output ONLY the JSON object, nothing else"""
 
         response = model.generate_content(prompt)
@@ -422,6 +447,15 @@ Rules:
 
         if not isinstance(result.get('product_descriptions'), list):
             result['product_descriptions'] = []
+
+        # Normalize items_count
+        try:
+            result['items_count'] = int(result.get('items_count', 0))
+        except (ValueError, TypeError):
+            result['items_count'] = len(result.get('product_descriptions', []))
+
+        if not result.get('seller_address'):
+            result['seller_address'] = 'Not Found'
 
         result['_extracted_by'] = 'gemini'
         print(f"   [OK] Gemini OCR-text extraction succeeded")
