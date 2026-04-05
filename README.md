@@ -285,11 +285,9 @@ Invoice File (JPG/PNG/PDF/TIFF)
 
 ### Real Talk: This project taught us that:
 
-*   OCR is 90% text extraction and 10% existential crisis
 *   Neural Networks are just spicy if-else statements with a PhD
 *   "Hybrid AI" is what you say when a single approach doesn't work
 *   CSV files are the duct tape of data engineering
-*   Flask routing is easy until you have 9 endpoints and forgot which one does what
 *   We probably should have started earlier (but the deadline pressure *did* improve the code quality)
 
 **Support:** If you find bugs, congratulations! You found them before we did. Pull requests welcome. Complaints can be sent to `/dev/null`.
