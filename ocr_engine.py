@@ -196,9 +196,92 @@ def _extraction_quality(data):
     return score
 
 
+def _extract_with_gemini_vision(img, api_key=None):
+    """
+    Send the actual invoice IMAGE to Gemini Vision for extraction.
+    This is far more accurate than sending OCR text since the model
+    can see the layout, tables, fonts, and structure directly.
+    Returns a data dict with 'category' key, or None on failure.
+    """
+    effective_key = api_key or GEMINI_API_KEY
+    if not effective_key:
+        return None
+
+    try:
+        genai.configure(api_key=effective_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        prompt = """You are an expert invoice processing AI.
+Analyze this invoice image carefully and extract all the information.
+
+Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
+{
+  "invoice_id": "the invoice number or ID",
+  "date": "the invoice date in dd/mm/yyyy format",
+  "seller_name": "the seller/vendor company name (who is issuing the invoice)",
+  "client_name": "the buyer/client name (who is being billed)",
+  "seller_tax_id": "seller tax ID / GSTIN / PAN if present",
+  "client_tax_id": "client tax ID / GSTIN if present",
+  "seller_iban": "seller IBAN / bank account number if present",
+  "total_amount": "the final total amount as a number like 123.45 (use grand total / balance due, not subtotal)",
+  "product_descriptions": ["list", "of", "item", "descriptions", "from", "the", "invoice"],
+  "category": "one of: Electronics, Furniture, Kitchen, Clothing, Beverages, Office Supplies, Books & Media, Services, Hardware, Other"
+}
+
+Rules:
+- For missing fields, use "Not Found"
+- For total_amount, use "0.00" if not found
+- seller_name = the company ISSUING the invoice (usually at the top)
+- client_name = the entity RECEIVING / being billed (labeled Bill To / Ship To / Client)
+- Prefer Invoice Date over Due Date
+- Prefer the FINAL total (after tax) over subtotal
+- Output ONLY the JSON object, nothing else"""
+
+        response = model.generate_content([prompt, img])
+        text = response.text.strip()
+
+        # Clean markdown wrapper if present
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+
+        result = json.loads(text)
+
+        # Validate category
+        valid_categories = [
+            "Hardware", "Books & Media", "Furniture", "Services", "Electronics",
+            "Clothing", "Kitchen", "Office Supplies", "Beverages", "Other"
+        ]
+        if result.get('category') not in valid_categories:
+            result['category'] = 'Other'
+
+        # Normalize total amount
+        try:
+            amt = float(str(result.get('total_amount', '0')).replace(',', ''))
+            result['total_amount'] = f"{amt:.2f}"
+        except (ValueError, TypeError):
+            result['total_amount'] = '0.00'
+
+        # Ensure product_descriptions is a list
+        if not isinstance(result.get('product_descriptions'), list):
+            result['product_descriptions'] = []
+
+        result['_extracted_by'] = 'gemini'
+        print(f"   [OK] Gemini Vision extraction+classification succeeded")
+        return result
+
+    except Exception as e:
+        print(f"   [FAIL] Gemini Vision extraction failed: {e}")
+        return None
+
+
 def _extract_with_gemini(ocr_text, api_key=None):
     """
-    Single Gemini API call that extracts all invoice fields AND classifies.
+    Fallback: Gemini API call using OCR text (when vision is unavailable).
     Returns a data dict with 'category' key, or None on failure.
     """
     effective_key = api_key or GEMINI_API_KEY
@@ -226,6 +309,7 @@ Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
   "client_tax_id": "client tax ID if present",
   "seller_iban": "seller IBAN if present",
   "total_amount": "total amount as a number like 123.45",
+  "product_descriptions": ["list", "of", "product", "descriptions"],
   "category": "one of: Electronics, Furniture, Kitchen, Clothing, Beverages, Office Supplies, Books & Media, Services, Hardware, Other"
 }}
 
@@ -260,12 +344,15 @@ Rules:
         except (ValueError, TypeError):
             result['total_amount'] = '0.00'
 
+        if not isinstance(result.get('product_descriptions'), list):
+            result['product_descriptions'] = []
+
         result['_extracted_by'] = 'gemini'
-        print(f"   [OK] Gemini extraction+classification succeeded")
+        print(f"   [OK] Gemini OCR-text extraction succeeded")
         return result
 
     except Exception as e:
-        print(f"   [FAIL] Gemini extraction failed: {e}")
+        print(f"   [FAIL] Gemini OCR-text extraction failed: {e}")
         return None
 
 
@@ -282,23 +369,47 @@ def extract_invoice_data(file_path, api_key=None):
     if ext == '.pdf':
         print(f"   PDF detected: {len(images)} page(s)")
 
+    effective_key = api_key or GEMINI_API_KEY
     pages_data = []
+
     for idx, img in enumerate(images):
         if ext == '.pdf':
             print(f"   Processing page {idx + 1}/{len(images)}...")
         try:
+            # ── STRATEGY: When API key is available, use Gemini Vision FIRST ──
+            # Gemini Vision is far more accurate because it sees the actual image
+            # layout, tables, and text directly — no OCR errors to deal with.
+
+            if effective_key:
+                print(f"   API key available — using Gemini Vision (primary)...")
+                gemini_result = _extract_with_gemini_vision(img, api_key=api_key)
+
+                if gemini_result:
+                    pages_data.append(gemini_result)
+                    continue
+                else:
+                    # Vision failed — try OCR text fallback with Gemini
+                    print(f"   Vision failed — falling back to heuristic + Gemini OCR text...")
+                    page_data = _extract_from_image(img)
+                    raw_text = page_data.get('_raw_ocr_text', '')
+                    gemini_text_result = _extract_with_gemini(raw_text, api_key=api_key)
+                    if gemini_text_result:
+                        pages_data.append(gemini_text_result)
+                        continue
+                    else:
+                        # Both Gemini methods failed — use heuristic
+                        print(f"   All Gemini methods failed — using heuristic result")
+                        pages_data.append(page_data)
+                        continue
+
+            # ── No API key: heuristic only ──
+            print(f"   No API key — using heuristic extraction only")
             page_data = _extract_from_image(img)
             quality = _extraction_quality(page_data)
             print(f"   Heuristic extraction quality: {quality}/5")
-
-            if quality < 3:
-                print(f"   Low quality score — trying Gemini fallback...")
-                raw_text = page_data.get('_raw_ocr_text', '')
-                gemini_result = _extract_with_gemini(raw_text, api_key=api_key)
-                if gemini_result:
-                    page_data = gemini_result
-
+            print(f"   TIP: Enter your Gemini API key in the website for much better results")
             pages_data.append(page_data)
+
         except Exception as e:
             print(f"   Error on page {idx + 1}: {e}")
 
