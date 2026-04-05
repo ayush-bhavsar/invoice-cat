@@ -78,6 +78,10 @@ def _extract_from_image(img):
         "client_tax_id": "Not Found",
         "seller_iban": "Not Found",
         "total_amount": "0.00",
+        "total_net_worth": "0.00",
+        "total_vat": "0.00",
+        "total_gross_worth": "0.00",
+        "vat_percent": "N/A",
         "items_count": 0,
         "product_descriptions": []
     }
@@ -112,6 +116,59 @@ def _extract_from_image(img):
                 continue
         if valid_amounts:
             data["total_amount"] = f"{max(valid_amounts):.2f}"
+
+    # ── Extract VAT%, Net Worth, VAT, Gross Worth from the SUMMARY section ──
+    summary_y = None
+    for i in range(n_boxes):
+        if ocr_data['text'][i].strip().upper() == 'SUMMARY':
+            summary_y = ocr_data['top'][i]
+            break
+
+    if summary_y is not None:
+        # Find the "Total" row in the summary section
+        summary_total_y = None
+        for i in range(n_boxes):
+            if ocr_data['top'][i] > summary_y and ocr_data['text'][i].strip().lower() == 'total':
+                summary_total_y = ocr_data['top'][i]
+                break
+
+        if summary_total_y is not None:
+            # Gather all text on the Total row
+            total_row_items = []
+            for i in range(n_boxes):
+                if abs(ocr_data['top'][i] - summary_total_y) < 25:
+                    total_row_items.append(ocr_data['text'][i].strip())
+            total_row_text = " ".join(total_row_items)
+            amounts_in_row = re.findall(r'[\$]?\s*\d[\d\s]*[.,]\d{2}', total_row_text)
+            parsed_amounts = []
+            for m in amounts_in_row:
+                clean_str = m.replace("$", "").replace(" ", "").replace(",", ".")
+                try:
+                    parsed_amounts.append(float(clean_str))
+                except ValueError:
+                    continue
+            # Typically: Net Worth, VAT, Gross Worth (3 amounts in order)
+            if len(parsed_amounts) >= 3:
+                data["total_net_worth"] = f"{parsed_amounts[0]:.2f}"
+                data["total_vat"] = f"{parsed_amounts[1]:.2f}"
+                data["total_gross_worth"] = f"{parsed_amounts[2]:.2f}"
+                data["total_amount"] = f"{parsed_amounts[2]:.2f}"
+            elif len(parsed_amounts) == 2:
+                data["total_net_worth"] = f"{parsed_amounts[0]:.2f}"
+                data["total_gross_worth"] = f"{parsed_amounts[1]:.2f}"
+                data["total_amount"] = f"{parsed_amounts[1]:.2f}"
+            elif len(parsed_amounts) == 1:
+                data["total_gross_worth"] = f"{parsed_amounts[0]:.2f}"
+                data["total_amount"] = f"{parsed_amounts[0]:.2f}"
+
+        # Find VAT% from the summary (look for percentage value like "10%")
+        for i in range(n_boxes):
+            if ocr_data['top'][i] > summary_y:
+                txt = ocr_data['text'][i].strip()
+                vat_match = re.match(r'^(\d+)%$', txt)
+                if vat_match:
+                    data["vat_percent"] = txt
+                    break
 
     prod_blacklist = ["description", "qty", "um", "net", "price", "vat", "gross", "worth", "total", "summary", "no.", "items"]
     name_blacklist = ["date", "issue", "invoice", "no:", "number", "id", "tax", "iban", "page", "seller:", "client:", "to:", "from:"]
@@ -224,17 +281,23 @@ Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
   "client_tax_id": "client tax ID / GSTIN if present",
   "seller_iban": "seller IBAN / bank account number if present",
   "total_amount": "the final total amount as a number like 123.45 (use grand total / balance due, not subtotal)",
+  "total_net_worth": "the total net worth (before tax) as a number like 123.45, or 0.00 if not found",
+  "total_vat": "the total VAT/tax amount as a number like 12.34, or 0.00 if not found",
+  "total_gross_worth": "the total gross worth (after tax) as a number like 135.79, or 0.00 if not found",
+  "vat_percent": "the VAT percentage like '10%' or 'N/A' if not found",
   "product_descriptions": ["list", "of", "item", "descriptions", "from", "the", "invoice"],
   "category": "one of: Electronics, Furniture, Kitchen, Clothing, Beverages, Office Supplies, Books & Media, Services, Hardware, Other"
 }
 
 Rules:
 - For missing fields, use "Not Found"
-- For total_amount, use "0.00" if not found
+- For total_amount, total_net_worth, total_vat, total_gross_worth use "0.00" if not found
+- For vat_percent use "N/A" if not found
 - seller_name = the company ISSUING the invoice (usually at the top)
 - client_name = the entity RECEIVING / being billed (labeled Bill To / Ship To / Client)
 - Prefer Invoice Date over Due Date
 - Prefer the FINAL total (after tax) over subtotal
+- Look for the SUMMARY section at the bottom for net worth, VAT, and gross worth totals
 - Output ONLY the JSON object, nothing else"""
 
         response = model.generate_content([prompt, img])
@@ -259,12 +322,16 @@ Rules:
         if result.get('category') not in valid_categories:
             result['category'] = 'Other'
 
-        # Normalize total amount
-        try:
-            amt = float(str(result.get('total_amount', '0')).replace(',', ''))
-            result['total_amount'] = f"{amt:.2f}"
-        except (ValueError, TypeError):
-            result['total_amount'] = '0.00'
+        # Normalize total amount and summary fields
+        for amt_field in ['total_amount', 'total_net_worth', 'total_vat', 'total_gross_worth']:
+            try:
+                amt = float(str(result.get(amt_field, '0')).replace(',', '').replace(' ', ''))
+                result[amt_field] = f"{amt:.2f}"
+            except (ValueError, TypeError):
+                result[amt_field] = '0.00'
+
+        if 'vat_percent' not in result or not result['vat_percent']:
+            result['vat_percent'] = 'N/A'
 
         # Ensure product_descriptions is a list
         if not isinstance(result.get('product_descriptions'), list):
@@ -309,13 +376,18 @@ Return ONLY valid JSON (no markdown, no explanation), with these exact keys:
   "client_tax_id": "client tax ID if present",
   "seller_iban": "seller IBAN if present",
   "total_amount": "total amount as a number like 123.45",
+  "total_net_worth": "the total net worth (before tax) as a number like 123.45, or 0.00 if not found",
+  "total_vat": "the total VAT/tax amount as a number like 12.34, or 0.00 if not found",
+  "total_gross_worth": "the total gross worth (after tax) as a number like 135.79, or 0.00 if not found",
+  "vat_percent": "the VAT percentage like '10%' or 'N/A' if not found",
   "product_descriptions": ["list", "of", "product", "descriptions"],
   "category": "one of: Electronics, Furniture, Kitchen, Clothing, Beverages, Office Supplies, Books & Media, Services, Hardware, Other"
 }}
 
 Rules:
 - For missing fields, use "Not Found"
-- For total_amount, use "0.00" if not found
+- For total_amount, total_net_worth, total_vat, total_gross_worth use "0.00" if not found
+- For vat_percent use "N/A" if not found
 - Output ONLY the JSON object, nothing else"""
 
         response = model.generate_content(prompt)
@@ -338,11 +410,15 @@ Rules:
         if result.get('category') not in valid_categories:
             result['category'] = 'Other'
 
-        try:
-            amt = float(str(result.get('total_amount', '0')).replace(',', ''))
-            result['total_amount'] = f"{amt:.2f}"
-        except (ValueError, TypeError):
-            result['total_amount'] = '0.00'
+        for amt_field in ['total_amount', 'total_net_worth', 'total_vat', 'total_gross_worth']:
+            try:
+                amt = float(str(result.get(amt_field, '0')).replace(',', '').replace(' ', ''))
+                result[amt_field] = f"{amt:.2f}"
+            except (ValueError, TypeError):
+                result[amt_field] = '0.00'
+
+        if 'vat_percent' not in result or not result['vat_percent']:
+            result['vat_percent'] = 'N/A'
 
         if not isinstance(result.get('product_descriptions'), list):
             result['product_descriptions'] = []

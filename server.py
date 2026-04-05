@@ -55,8 +55,12 @@ def upload_file():
 
         user_api_key = request.headers.get('X-API-Key')
 
+        classification_method = request.args.get('method', 'local_nn')
+        # Only use Gemini extraction when LLM mode is selected
+        extraction_api_key = user_api_key if classification_method == 'gemini' else None
+
         try:
-            raw_data_list = extract_invoice_data(save_path, api_key=user_api_key)
+            raw_data_list = extract_invoice_data(save_path, api_key=extraction_api_key)
         except Exception as e:
             print(f"OCR Error: {e}")
             return jsonify({'error': f"OCR Error: {str(e)}"}), 500
@@ -66,7 +70,6 @@ def upload_file():
 
         from collections import Counter
         from classifier import predict_categories_batch
-        classification_method = request.args.get('method', 'local_nn')
         
         response_data_list = []
 
@@ -99,6 +102,10 @@ def upload_file():
                     "Seller Tax ID": raw_data.get('seller_tax_id'),
                     "Seller IBAN": raw_data.get('seller_iban', ''), 
                     "Client Tax ID": raw_data.get('client_tax_id'),
+                    "VAT %": raw_data.get('vat_percent', 'N/A'),
+                    "Total Net Worth": raw_data.get('total_net_worth', '0.00'),
+                    "Total VAT": raw_data.get('total_vat', '0.00'),
+                    "Total Gross Worth": raw_data.get('total_gross_worth', '0.00'),
                     "Total Amount": raw_data.get('total_amount'),
                     "Category": main_category
                 }, batch_id)
@@ -107,6 +114,10 @@ def upload_file():
                 "filename": filename if len(raw_data_list) == 1 else f"{filename} (Page {p_idx+1})",
                 "date": raw_data.get('date', 'Unknown'),
                 "total_amount": raw_data.get('total_amount', '0.00'),
+                "vat_percent": raw_data.get('vat_percent', 'N/A'),
+                "total_net_worth": raw_data.get('total_net_worth', '0.00'),
+                "total_vat": raw_data.get('total_vat', '0.00'),
+                "total_gross_worth": raw_data.get('total_gross_worth', '0.00'),
                 "category": main_category
             })
 

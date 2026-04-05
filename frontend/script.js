@@ -198,8 +198,8 @@ function showResults(data) {
 }
 
 function downloadCSV(data) {
-    const headers = ["Filename", "Date", "Total Amount", "Category"];
-    const rows = [[data.filename, data.date, data.total_amount, data.category]];
+    const headers = ["Filename", "Date", "VAT %", "Net Worth", "VAT Amount", "Gross Worth", "Total Amount", "Category"];
+    const rows = [[data.filename, data.date, data.vat_percent || 'N/A', data.total_net_worth || '0.00', data.total_vat || '0.00', data.total_gross_worth || '0.00', data.total_amount, data.category]];
 
     let csvContent = "data:text/csv;charset=utf-8,"
         + headers.join(",") + "\n"
